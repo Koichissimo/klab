@@ -91,6 +91,34 @@
   .row2 { display: flex; gap: 8px; }
   .row2 > * { flex: 1; }
   .sel { width: 100%; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 15px; font-family: inherit; background: #fff; color: var(--ink); margin-top: 6px; }
+  .seg { display: flex; background: #efe9e0; border-radius: 12px; padding: 3px; margin-bottom: 14px; }
+  .seg button { flex: 1; white-space: nowrap; border: 0; background: none; padding: 9px 2px; border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--sub); font-family: inherit; }
+  .seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .qs { margin-bottom: 18px; }
+  .qs:last-child { margin-bottom: 4px; }
+  .qs h4 { font-size: 15px; margin: 0 0 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip2 { border: 1.5px solid var(--line); background: #fff; border-radius: 99px; padding: 8px 14px; font-size: 14px; font-family: inherit; color: var(--ink); line-height: 1.3; }
+  .chip2.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .scale { margin: 10px 0 14px; }
+  .scale .lbl { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; }
+  .scale .val { font-weight: 700; color: #8a5a26; font-size: 20px; }
+  .scale .val small { font-size: 12px; color: var(--sub); font-weight: 400; }
+  .scale input[type=range] { width: 100%; accent-color: #b9823b; height: 28px; }
+  .scale.unset input[type=range] { opacity: .45; }
+  .scale .ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--sub); margin-top: -4px; }
+  .trow { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; }
+  .trow textarea { padding: 10px; font-size: 15px; }
+  .mic.sm { width: 40px; height: 40px; border-radius: 20px; font-size: 18px; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stats div { background: #faf6ef; border-radius: 12px; padding: 10px; text-align: center; }
+  .stats b { display: block; font-size: 24px; color: #8a5a26; }
+  .stats span { font-size: 12px; color: var(--sub); }
+  .badge.gold { background: #f3e3c6; color: #7a4e1d; }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--sub); margin-top: 4px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 5px; margin-right: 4px; vertical-align: -1px; }
+  .legend i.ring { background: #fff; border: 2px solid var(--sub); width: 8px; height: 8px; }
+  .mlog { cursor: pointer; }
   .install { background: #fff; border: 1.5px solid var(--gold); border-radius: 12px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; position: relative; }
   .install b { color: var(--wine); }
   .install .x { position: absolute; right: 8px; top: 4px; border: 0; background: none; font-size: 18px; color: var(--sub); }
@@ -520,11 +548,11 @@ function renderAdmin() {
 var SS = { tab: 'me' };
 function studentTabs() {
   var nav = $('tabs'); nav.style.display = 'flex';
-  nav.innerHTML = [['me', '✏️ 自分のページ'], ['class', '👥 みんなの自己紹介']].map(function (t) {
+  nav.innerHTML = [['me', '🙋 自分'], ['mental', '🧠 メンタル'], ['class', '👥 みんな']].map(function (t) {
     return '<button data-t="' + t[0] + '" class="' + (SS.tab === t[0] ? 'on' : '') + '">' + t[1] + '</button>';
   }).join('');
   Array.prototype.forEach.call(nav.querySelectorAll('button'), function (b) {
-    b.onclick = function () { SS.tab = b.getAttribute('data-t'); studentTabs(); if (SS.tab === 'me') renderStudentSelf(); else renderClassmates(); };
+    b.onclick = function () { SS.tab = b.getAttribute('data-t'); studentTabs(); window.scrollTo(0, 0); if (SS.tab === 'me') renderStudentSelf(); else if (SS.tab === 'mental') renderMental(); else renderClassmates(); };
   });
 }
 function renderStudentSelf() {
@@ -573,6 +601,244 @@ function renderClassmates() {
     }
     $('cq').oninput = draw; draw();
   }).catch(function (e) { app.innerHTML = '<div class="card">' + esc(e.message || e) + '</div>'; });
+}
+
+// ---------- メンタルチェック（本番力） ----------
+var MK = {
+  kinds: ['通常レッスン', '1人で練習', '1発撮り', '人前で練習', '模擬本番', 'オーディション', '本番', 'その他'],
+  stage: ['1発撮り', '模擬本番', 'オーディション', '本番'],
+  pressures: ['人に見られる', '評価される', '一発勝負', '上手く魅せなきゃ', '合否', '苦手な曲', '準備時間', '周囲との比較', '特になし', 'その他'],
+  feelings: ['楽しかった', '楽しくなかった', '前向きだったけど上手くいかずモヤモヤ', '練習に対して億劫だった', 'その他'],
+  prep: ['呼吸', '体を動かす', 'グラウンディング', 'ウォームアップ', 'セルフトーク', 'イメージング', 'ルーティン', '特になし'],
+  breakdown: ['ない', '少し', '明確にあった'],
+  tools: ['physical Reset', '相手を見る', '役の目的に戻る', '音楽を聴く', '呼吸', '続けていいと許可する', 'Reset Word'],
+  backTime: ['すぐ（数秒）', '30秒くらい', '1分くらい', 'それ以上', '戻れなかった']
+};
+var MS = { view: 'today', E: null, list: null, ym: null };
+function todayStr() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function mdraftKey() { return 'mental-draft:' + TOKEN; }
+
+function renderMental() {
+  var app = $('app');
+  var h = '<div class="seg" id="mseg">' + [['today', '✏️ 今日の記録'], ['log', '📈 これまで'], ['month', '🗓 月の振り返り']].map(function (t) {
+    return '<button data-v="' + t[0] + '" class="' + (MS.view === t[0] ? 'on' : '') + '">' + t[1] + '</button>';
+  }).join('') + '</div><div id="mbody"></div>';
+  app.innerHTML = h;
+  Array.prototype.forEach.call($('mseg').querySelectorAll('button'), function (b) {
+    b.onclick = function () { MS.view = b.getAttribute('data-v'); if (MS.view === 'today' && !MS.editing) MS.E = null; renderMental(); };
+  });
+  if (MS.view === 'today') mentalForm();
+  else if (MS.view === 'log') mentalLog();
+  else mentalMonth();
+}
+
+function chipGroup(key, options, multi, E) {
+  var cur = E[key];
+  return '<div class="chips" data-key="' + key + '" data-multi="' + (multi ? 1 : 0) + '">' + options.map(function (o) {
+    var on = multi ? (cur || []).indexOf(o) >= 0 : cur === o;
+    return '<button type="button" class="chip2' + (on ? ' on' : '') + '" data-v="' + esc(o) + '">' + esc(o) + '</button>';
+  }).join('') + '</div>';
+}
+function scaleRow(key, label, min, max, E) {
+  var v = E[key];
+  var has = v !== undefined && v !== null && v !== '';
+  return '<div class="scale' + (has ? '' : ' unset') + '" data-key="' + key + '"><div class="lbl"><span>' + label + '</span><span class="val">' + (has ? v : '—') + '<small> / ' + max + '</small></span></div>' +
+    '<input type="range" min="' + min + '" max="' + max + '" step="1" value="' + (has ? v : Math.round((min + max) / 2)) + '"><div class="ends"><span>' + min + '</span><span>' + max + '</span></div></div>';
+}
+function textRow(key, ph, E, rows, mic) {
+  return '<div class="trow">' + (mic ? '<button type="button" class="mic sm" data-mic="' + key + '">🎤</button>' : '') +
+    '<textarea data-tkey="' + key + '" rows="' + (rows || 2) + '" placeholder="' + esc(ph) + '">' + esc(E[key] || '') + '</textarea></div>';
+}
+function q(title, body, sub) { return '<div class="qs"><h4>' + title + (sub ? ' <span class="muted">' + sub + '</span>' : '') + '</h4>' + body + '</div>'; }
+
+function mentalForm() {
+  var E = MS.E;
+  if (!E) {
+    var d = null; try { d = JSON.parse(store.get(mdraftKey()) || 'null'); } catch (e) {}
+    E = d && d.date === todayStr() && !d.id ? d : { date: todayStr() };
+    MS.E = E;
+  }
+  var isStage = MK.stage.indexOf(E.kind) >= 0;
+  var showDetail = isStage || MS.detailOpen || E.prep || E.breakdown;
+  var broke = E.breakdown === '少し' || E.breakdown === '明確にあった';
+  var h = '';
+  if (E.id) h += '<div class="hint">' + mdLabel(E.date) + ' の記録を編集しています。<a href="#" id="mnew">新しく記録する</a></div>';
+  h += '<div class="card"><div class="row2" style="align-items:center"><h3 style="margin:0">📅 日付</h3><input type="date" id="mdate" value="' + esc(E.date) + '" style="flex:none;border:1.5px solid var(--line);border-radius:10px;padding:6px 8px;font-family:inherit;font-size:15px"></div></div>';
+  h += '<div class="card">';
+  h += q('◆ 今日は', chipGroup('kind', MK.kinds, false, E) + (E.kind === 'その他' ? textRow('kindOther', '内容', E, 1) : ''));
+  h += q('◆ 感じたプレッシャー', chipGroup('pressures', MK.pressures, true, E) + ((E.pressures || []).indexOf('その他') >= 0 ? textRow('pressureOther', 'その他のプレッシャー', E, 1) : ''), '（いくつでも）');
+  h += q('◆ チャレンジ満足度', scaleRow('satisfaction', '今日のチャレンジにどれくらい満足？', 0, 10, E));
+  h += q('◆ 今日の感覚は？', chipGroup('feeling', MK.feelings, false, E) + (E.feeling === 'その他' ? textRow('feelingOther', 'どんな感覚？', E, 1) : ''));
+  h += '</div><div class="card">';
+  h += q('◆ ' + (isStage ? '本番・実践前' : '今日') + 'の体の状態', scaleRow('tension', '緊張度', 1, 10, E) + scaleRow('bodyFreedom', '身体の自由度', 1, 10, E) +
+    scaleRow('voiceFreedom', '声の自由度', 1, 10, E) + scaleRow('confidence', '自信', 1, 10, E) + textRow('notes', 'その他の気づき（任意）', E, 2, true));
+  h += '</div>';
+  if (!showDetail) {
+    h += '<button type="button" class="btn block ghost" id="mdetail" style="margin-bottom:14px">＋ 実践・本番の詳しい記録（任意）</button>';
+  } else {
+    h += '<div class="card"><h3>🎭 実践・本番の記録</h3>';
+    h += q('◆ 実践前に行ったこと', chipGroup('prep', MK.prep, true, E) + ((E.prep || []).indexOf('ルーティン') >= 0 ? textRow('routine', 'どんなルーティン？', E, 1) : ''), '（いくつでも）');
+    h += q('◆ やってみての気づき', scaleRow('focus', '役・相手・目的へ集中できた', 1, 10, E) + scaleRow('voiceWorry', '自分の声を気にしていた', 1, 10, E) +
+      scaleRow('evalWorry', '評価を気にしていた', 1, 10, E) + textRow('insight', 'その他の気づき（任意）', E, 2, true));
+    h += q('◆ 崩れた瞬間はあったか？', chipGroup('breakdown', MK.breakdown, false, E));
+    if (broke) {
+      h += q('◆ 何が起こったか？', textRow('whatHappened', '例：歌詞が飛んだ、高音で焦った', E, 2, true));
+      h += q('◆ 何を使ったか', chipGroup('recoveryTools', MK.tools, true, E) + ((E.recoveryTools || []).indexOf('Reset Word') >= 0 ? textRow('resetWord', 'Reset Word', E, 1) : ''), '（いくつでも）');
+      h += q('◆ どれくらい戻れた？', scaleRow('recoveredLevel', '戻れた度合い', 1, 10, E));
+      h += q('◆ 戻るまでかかった時間', chipGroup('backTime', MK.backTime, false, E));
+    }
+    h += '</div>';
+  }
+  h += '<button class="btn block" id="msave">' + (E.id ? '更新する' : '記録する') + '</button><div class="status" id="mst" style="text-align:center;margin-top:8px"></div>';
+  $('mbody').innerHTML = h;
+
+  var body = $('mbody');
+  function changed(rerender) {
+    try { if (!E.id) store.set(mdraftKey(), JSON.stringify(E)); } catch (e) {}
+    if (rerender) { var y = window.scrollY; mentalForm(); window.scrollTo(0, y); }
+  }
+  $('mdate').onchange = function () { E.date = this.value || todayStr(); changed(false); };
+  if ($('mnew')) $('mnew').onclick = function (e) { e.preventDefault(); MS.E = null; MS.editing = false; MS.detailOpen = false; renderMental(); };
+  if ($('mdetail')) $('mdetail').onclick = function () { MS.detailOpen = true; changed(true); };
+  Array.prototype.forEach.call(body.querySelectorAll('.chips'), function (g) {
+    var key = g.getAttribute('data-key'), multi = g.getAttribute('data-multi') === '1';
+    Array.prototype.forEach.call(g.querySelectorAll('.chip2'), function (b) {
+      b.onclick = function () {
+        var v = b.getAttribute('data-v');
+        if (multi) {
+          var arr = (E[key] || []).slice(); var i = arr.indexOf(v);
+          if (i >= 0) arr.splice(i, 1); else {
+            if (v === '特になし') arr = []; else { var j = arr.indexOf('特になし'); if (j >= 0) arr.splice(j, 1); }
+            arr.push(v);
+          }
+          E[key] = arr;
+        } else E[key] = (E[key] === v) ? '' : v;
+        changed(true);
+      };
+    });
+  });
+  Array.prototype.forEach.call(body.querySelectorAll('.scale'), function (s) {
+    var key = s.getAttribute('data-key'), inp = s.querySelector('input'), val = s.querySelector('.val');
+    var max = inp.getAttribute('max');
+    var setv = function () { E[key] = Number(inp.value); s.classList.remove('unset'); val.innerHTML = inp.value + '<small> / ' + max + '</small>'; changed(false); };
+    inp.addEventListener('input', setv); inp.addEventListener('change', setv);
+  });
+  Array.prototype.forEach.call(body.querySelectorAll('textarea[data-tkey]'), function (t) {
+    t.addEventListener('input', function () { E[t.getAttribute('data-tkey')] = t.value; changed(false); });
+  });
+  Array.prototype.forEach.call(body.querySelectorAll('[data-mic]'), function (b) {
+    var t = body.querySelector('textarea[data-tkey="' + b.getAttribute('data-mic') + '"]');
+    attachMic(b, t, function () { E[t.getAttribute('data-tkey')] = t.value; changed(false); });
+  });
+  $('msave').onclick = function () {
+    if (!E.kind) { toast('「今日は」を選んでください'); return; }
+    var b = $('msave'); b.disabled = true; b.textContent = '保存中…';
+    call('apiMentalSave', TOKEN, E).then(function (id) {
+      store.del(mdraftKey());
+      MS.list = null;
+      toast('✅ 記録しました。おつかれさまでした！', 3000);
+      MS.E = null; MS.editing = false; MS.detailOpen = false; MS.view = 'log'; renderMental();
+    }).catch(function (e) { b.disabled = false; b.textContent = E.id ? '更新する' : '記録する'; err(e); });
+  };
+}
+
+function trendSvg(list) {
+  var pts = list.slice(0, 30).reverse();
+  if (pts.length < 2) return '';
+  var W = 320, H = 110, pad = 16, n = pts.length;
+  var x = function (i) { return pad + (W - pad * 2) * (i / (n - 1)); };
+  var y = function (v) { return H - pad - (H - pad * 2) * ((v - 1) / 9); };
+  function line(key, color) {
+    var d = '', dots = '';
+    pts.forEach(function (p, i) {
+      var v = p[key]; if (v === undefined || v === null || v === '') return;
+      d += (d ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1);
+      var big = MK.stage.indexOf(p.kind) >= 0;
+      dots += '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(v).toFixed(1) + '" r="' + (big ? 4.5 : 2.8) + '" fill="' + (big ? '#fff' : color) + '" stroke="' + color + '" stroke-width="' + (big ? 2 : 0) + '"/>';
+    });
+    return '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linejoin="round"/>' + dots;
+  }
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block">' +
+    [1, 5.5, 10].map(function (v) { return '<line x1="' + pad + '" x2="' + (W - pad) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#ece6dc" stroke-width="1"/>'; }).join('') +
+    line('tension', '#c0392b') + line('confidence', '#b9823b') + '</svg>' +
+    '<div class="legend"><span><i style="background:#c0392b"></i>緊張度</span><span><i style="background:#b9823b"></i>自信</span><span><i class="ring"></i>本番・実践</span></div>';
+}
+
+function mentalLog() {
+  var body = $('mbody');
+  body.innerHTML = '<div class="loading">読み込み中…</div>';
+  (MS.list ? Promise.resolve(MS.list) : call('apiMentalList', TOKEN)).then(function (list) {
+    MS.list = list;
+    if (!list.length) { body.innerHTML = '<div class="card muted">まだ記録がありません。「今日のチェック」から始めましょう。</div>'; return; }
+    var h = '<div class="card"><h3>📈 緊張度と自信の流れ（最近30回）</h3>' + (trendSvg(list) || '<div class="muted">2回以上記録するとグラフが表示されます</div>') + '</div>';
+    h += list.map(function (c, i) {
+      var badges = [];
+      if (c.tension) badges.push('緊張 ' + c.tension);
+      if (c.confidence) badges.push('自信 ' + c.confidence);
+      if (c.satisfaction !== undefined && c.satisfaction !== null && c.satisfaction !== '') badges.push('満足 ' + c.satisfaction);
+      return '<div class="card mlog" data-i="' + i + '"><div class="row2" style="align-items:baseline"><b>' + mdLabel(c.date) + '</b><span class="badge' + (MK.stage.indexOf(c.kind) >= 0 ? ' gold' : '') + '" style="flex:none">' + esc(c.kind || '') + '</span></div>' +
+        '<div style="margin-top:4px">' + badges.map(function (b) { return '<span class="badge gray">' + esc(b) + '</span>'; }).join('') + '</div>' +
+        (c.feeling ? '<div class="muted" style="margin-top:4px">' + esc(c.feeling) + (c.breakdown && c.breakdown !== 'ない' ? '／崩れた瞬間：' + esc(c.breakdown) : '') + '</div>' : '') +
+        (c.notes ? '<div style="margin-top:6px;white-space:pre-wrap">' + esc(c.notes) + '</div>' : '') + '</div>';
+    }).join('');
+    body.innerHTML = h;
+    Array.prototype.forEach.call(body.querySelectorAll('.mlog'), function (el) {
+      el.onclick = function () { MS.E = JSON.parse(JSON.stringify(list[+el.getAttribute('data-i')])); MS.editing = true; MS.view = 'today'; renderMental(); window.scrollTo(0, 0); };
+    });
+  }).catch(function (e) { body.innerHTML = ''; err(e); });
+}
+
+var MONTH_Q = [
+  ['happened', '何が起きた？'], ['helped', '何が助けになった？'], ['hindered', '何が邪魔した？'], ['learnedSelf', '自分について何がわかった？'],
+  ['tryNext', '次回は1つ何を試す？']
+];
+var NEXT_Q = [['challenge', '自分にとってちょうどいいチャレンジは？'], ['bestTool', '一番効果があったRecovery Tool'], ['experiment', '来月の実験'], ['oneLine', '今月学んだことを1文にすると？']];
+function ymAdd(ym, n) { var p = ym.split('-'), d = new Date(+p[0], +p[1] - 1 + n, 1); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
+function mentalMonth() {
+  var body = $('mbody');
+  MS.ym = MS.ym || todayStr().slice(0, 7);
+  body.innerHTML = '<div class="loading">読み込み中…</div>';
+  call('apiMentalMonth', TOKEN, MS.ym).then(function (m) {
+    var R = m.reflection || {};
+    var p = m.ym.split('-');
+    var fmt = function (v) { return v === null || v === undefined ? '—' : v; };
+    var h = '<div class="daynav"><button class="iconbtn" id="mprev">◀</button><div class="d">' + (+p[0]) + '年' + (+p[1]) + '月<small>記録 ' + m.count + '回（本番・実践 ' + m.stageCount + '回）</small></div><button class="iconbtn" id="mnext">▶</button></div>';
+    h += '<div class="card"><h3>📊 今月の数字（自動計算）</h3><div class="stats">' +
+      '<div><b>' + fmt(m.practiceTension) + '</b><span>練習時の平均緊張度</span></div>' +
+      '<div><b>' + fmt(m.stageTension) + '</b><span>本番・模擬の平均緊張度</span></div>' +
+      '<div><b>' + (m.gap === null ? '—' : (m.gap > 0 ? '+' : '') + m.gap) + '</b><span>本番と練習の緊張の差</span></div>' +
+      '<div><b>' + fmt(m.avgConfidence) + '</b><span>平均の自信</span></div></div>';
+    if (m.tools.length) {
+      h += '<div class="muted" style="margin-top:10px">よく使ったRecovery Tool（戻れた度合いの平均）</div>' + m.tools.slice(0, 5).map(function (t) {
+        return '<div class="row2" style="margin-top:4px"><span>' + esc(t.name) + '</span><span class="muted" style="flex:none">' + t.count + '回・' + fmt(t.avgBack) + '</span></div>';
+      }).join('');
+    }
+    h += '</div>';
+    if (!R.bestTool && m.tools.length) R.bestTool = m.tools[0].name;
+    h += '<div class="card"><h3>🔁 振り返り</h3>' + MONTH_Q.map(function (x) { return q('◆ ' + x[1], textRow(x[0], '', R, 2, true)); }).join('') +
+      q('◆ 実力発揮度', scaleRow('performance', '今月、実力をどれくらい発揮できた？', 1, 10, R)) + '</div>';
+    h += '<div class="card"><h3>🚀 来月に向けて</h3>' + NEXT_Q.map(function (x) { return q('◆ ' + x[1], textRow(x[0], '', R, 2, true)); }).join('') + '</div>';
+    h += '<button class="btn block" id="mmsave">振り返りを保存する</button><div class="status" style="text-align:center;margin-top:8px">' + (m.updated ? '最終更新：' + esc(m.updated) : '') + '</div>';
+    body.innerHTML = h;
+    $('mprev').onclick = function () { MS.ym = ymAdd(m.ym, -1); mentalMonth(); };
+    $('mnext').onclick = function () { MS.ym = ymAdd(m.ym, 1); mentalMonth(); };
+    Array.prototype.forEach.call(body.querySelectorAll('textarea[data-tkey]'), function (t) {
+      t.addEventListener('input', function () { R[t.getAttribute('data-tkey')] = t.value; });
+    });
+    Array.prototype.forEach.call(body.querySelectorAll('[data-mic]'), function (b) {
+      var t = body.querySelector('textarea[data-tkey="' + b.getAttribute('data-mic') + '"]');
+      attachMic(b, t, function () { R[t.getAttribute('data-tkey')] = t.value; });
+    });
+    Array.prototype.forEach.call(body.querySelectorAll('.scale'), function (s) {
+      var inp = s.querySelector('input'), val = s.querySelector('.val');
+      var setv = function () { R.performance = Number(inp.value); s.classList.remove('unset'); val.innerHTML = inp.value + '<small> / 10</small>'; };
+      inp.addEventListener('input', setv);
+    });
+    $('mmsave').onclick = function () {
+      var b = $('mmsave'); b.disabled = true; b.textContent = '保存中…';
+      call('apiMentalMonthSave', TOKEN, m.ym, R).then(function () { b.disabled = false; b.textContent = '振り返りを保存する'; toast('✅ 保存しました'); }).catch(function (e) { b.disabled = false; b.textContent = '振り返りを保存する'; err(e); });
+    };
+  }).catch(function (e) { body.innerHTML = ''; err(e); });
 }
 
 // ---------- 起動 ----------
