@@ -119,6 +119,12 @@
   .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 5px; margin-right: 4px; vertical-align: -1px; }
   .legend i.ring { background: #fff; border: 2px solid var(--sub); width: 8px; height: 8px; }
   .mlog { cursor: pointer; }
+  .memo { cursor: pointer; }
+  .monthhd { font-size: 13px; font-weight: 700; color: var(--sub); margin: 14px 0 6px; }
+  .monthhd:first-child { margin-top: 0; }
+  .hintcard { background: #fbf5ea; border-color: #ecd9b8; }
+  mark { background: #f6e1a8; padding: 0 1px; border-radius: 3px; }
+  .chip2 small { opacity: .7; font-size: 11px; }
   .install { background: #fff; border: 1.5px solid var(--gold); border-radius: 12px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; position: relative; }
   .install b { color: var(--wine); }
   .install .x { position: absolute; right: 8px; top: 4px; border: 0; background: none; font-size: 18px; color: var(--sub); }
@@ -550,11 +556,11 @@ function renderAdmin() {
 var SS = { tab: 'me' };
 function studentTabs() {
   var nav = $('tabs'); nav.style.display = 'flex';
-  nav.innerHTML = [['me', '🙋 自分'], ['mental', '🧠 メンタル'], ['class', '👥 みんな']].map(function (t) {
+  nav.innerHTML = [['me', '🙋 自分'], ['memo', '📝 メモ'], ['mental', '🧠 メンタル'], ['class', '👥 みんな']].map(function (t) {
     return '<button data-t="' + t[0] + '" class="' + (SS.tab === t[0] ? 'on' : '') + '">' + t[1] + '</button>';
   }).join('');
   Array.prototype.forEach.call(nav.querySelectorAll('button'), function (b) {
-    b.onclick = function () { SS.tab = b.getAttribute('data-t'); studentTabs(); window.scrollTo(0, 0); if (SS.tab === 'me') renderStudentSelf(); else if (SS.tab === 'mental') renderMental(); else renderClassmates(); };
+    b.onclick = function () { SS.tab = b.getAttribute('data-t'); studentTabs(); window.scrollTo(0, 0); if (SS.tab === 'me') renderStudentSelf(); else if (SS.tab === 'mental') renderMental(); else if (SS.tab === 'memo') renderMemo(); else renderClassmates(); };
   });
 }
 function renderStudentSelf() {
@@ -892,6 +898,106 @@ function staffMentalCard(wrap, studentId, count) {
       $('smnext').onclick = function () { loadM(ymAdd(m.ym, 1)); };
     }).catch(function (e) { v.innerHTML = ''; err(e); });
   }
+}
+
+// ---------- 気づきメモ（本人だけ） ----------
+var MEMO_TAGS = ['歌・発声', '演技', 'ダンス', '英語', 'メンタル', '身体', '曲・解釈', 'その他'];
+var MM = { list: null, E: null, q: '', tag: '' };
+function memoDraftKey() { return 'memo-draft:' + TOKEN; }
+function renderMemo() {
+  var app = $('app');
+  app.innerHTML = '<div class="loading">読み込み中…</div>';
+  (MM.list ? Promise.resolve(MM.list) : call('apiMemoList', TOKEN)).then(function (list) {
+    MM.list = list;
+    if (!MM.E) {
+      var d = null; try { d = JSON.parse(store.get(memoDraftKey()) || 'null'); } catch (e) {}
+      MM.E = d && !d.id ? d : { date: todayStr(), lesson: '', tags: [], text: '' };
+    }
+    drawMemo();
+  }).catch(function (e) { app.innerHTML = ''; err(e); });
+}
+function drawMemo() {
+  var app = $('app'), E = MM.E, list = MM.list;
+  var lessons = []; list.forEach(function (m) { if (m.lesson && lessons.indexOf(m.lesson) < 0) lessons.push(m.lesson); });
+  var h = '<div class="card"><h3>' + (E.id ? '✏️ 気づきを編集' : '✏️ 今日の気づき') + '</h3>' +
+    '<div class="muted" style="font-size:12px;margin:-4px 0 10px">🔒 このメモはあなただけが見られます（先生や他のメンバーには見えません）</div>' +
+    '<div class="row2" style="gap:8px"><input type="date" id="mmdate" value="' + esc(E.date) + '" style="flex:none;border:1.5px solid var(--line);border-radius:10px;padding:8px;font-family:inherit;font-size:15px">' +
+    '<input id="mmlesson" list="mmlessons" placeholder="レッスン名（任意）" value="' + esc(E.lesson || '') + '" style="min-width:0;border:1.5px solid var(--line);border-radius:10px;padding:8px;font-family:inherit;font-size:15px">' +
+    '<datalist id="mmlessons">' + lessons.slice(0, 20).map(function (l) { return '<option value="' + esc(l) + '">'; }).join('') + '</datalist></div>' +
+    '<div class="chips" id="mmtags" style="margin-top:10px">' + MEMO_TAGS.map(function (t) {
+      return '<button type="button" class="chip2' + ((E.tags || []).indexOf(t) >= 0 ? ' on' : '') + '" data-v="' + esc(t) + '">' + esc(t) + '</button>'; }).join('') + '</div>' +
+    '<div class="trow" style="margin-top:10px"><button type="button" class="mic sm" id="mmmic">🎤</button><textarea id="mmtext" rows="4" placeholder="今日のレッスンで気づいたこと・先生に言われて響いたこと・次に試したいこと">' + esc(E.text || '') + '</textarea></div>' +
+    '<div class="row2" style="margin-top:10px">' + (E.id ? '<button class="btn small ghost" id="mmcancel" style="flex:none">やめる</button><button class="btn small ghost" id="mmdel" style="flex:none">削除</button>' : '') +
+    '<button class="btn" id="mmsave" style="flex:1">' + (E.id ? '更新する' : '保存する') + '</button></div></div>';
+
+  // 見える化：過去の自分からのヒント＋タグごとの件数
+  var old = list.filter(function (m) { return m.date <= addDays(todayStr(), -7); });
+  if (old.length && !E.id) {
+    var pick = old[Math.floor(Math.random() * old.length)];
+    h += '<div class="card hintcard"><div class="row2" style="align-items:center"><h3 style="margin:0">💡 過去の自分からのヒント</h3><button class="btn small ghost" id="mmshuffle" style="flex:none">ほかを見る</button></div>' +
+      '<div class="muted" style="margin-top:6px">' + mdLabel(pick.date) + (pick.lesson ? '・' + esc(pick.lesson) : '') + '</div><div style="white-space:pre-wrap;margin-top:2px">' + esc(pick.text) + '</div></div>';
+  }
+  var counts = {}; list.forEach(function (m) { (m.tags || []).forEach(function (t) { counts[t] = (counts[t] || 0) + 1; }); });
+  h += '<div class="card"><h3>📚 これまでの気づき（' + list.length + '件）</h3>';
+  if (list.length) {
+    h += '<input id="mmq" class="search" placeholder="🔍 言葉で探す（例：高音、息、緊張）" value="' + esc(MM.q) + '" style="width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:12px;padding:10px;font-size:15px;font-family:inherit">';
+    h += '<div class="chips" id="mmfilter" style="margin-top:10px"><button type="button" class="chip2' + (!MM.tag ? ' on' : '') + '" data-v="">すべて</button>' +
+      Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).map(function (t) {
+        return '<button type="button" class="chip2' + (MM.tag === t ? ' on' : '') + '" data-v="' + esc(t) + '">' + esc(t) + ' <small>' + counts[t] + '</small></button>'; }).join('') + '</div>';
+    h += '<div id="mmlist" style="margin-top:12px"></div>';
+  } else h += '<div class="muted">まだメモがありません。レッスンのあとに一言だけでも残してみましょう。</div>';
+  h += '</div>';
+  app.innerHTML = h;
+
+  function saveDraft() { if (!E.id) store.set(memoDraftKey(), JSON.stringify(E)); }
+  $('mmdate').onchange = function () { E.date = this.value || todayStr(); saveDraft(); };
+  $('mmlesson').oninput = function () { E.lesson = this.value; saveDraft(); };
+  $('mmtext').oninput = function () { E.text = this.value; saveDraft(); };
+  attachMic($('mmmic'), $('mmtext'), function () { E.text = $('mmtext').value; saveDraft(); });
+  Array.prototype.forEach.call($('mmtags').querySelectorAll('.chip2'), function (b) {
+    b.onclick = function () { var v = b.getAttribute('data-v'), a = (E.tags || []).slice(), i = a.indexOf(v);
+      if (i >= 0) a.splice(i, 1); else a.push(v); E.tags = a; b.classList.toggle('on'); saveDraft(); };
+  });
+  if ($('mmshuffle')) $('mmshuffle').onclick = function () { drawMemo(); };
+  if ($('mmcancel')) $('mmcancel').onclick = function () { MM.E = null; renderMemo(); };
+  if ($('mmdel')) $('mmdel').onclick = function () {
+    if (!window.confirm('このメモを削除しますか？')) return;
+    call('apiMemoDelete', TOKEN, E.id).then(function () { MM.list = null; MM.E = null; toast('削除しました'); renderMemo(); }).catch(err);
+  };
+  $('mmsave').onclick = function () {
+    if (!String(E.text || '').trim()) { toast('気づきを書いてください'); return; }
+    var b = $('mmsave'); b.disabled = true; b.textContent = '保存中…';
+    call('apiMemoSave', TOKEN, E).then(function () {
+      store.del(memoDraftKey()); MM.list = null; MM.E = null; toast('✅ 保存しました'); renderMemo();
+    }).catch(function (e) { b.disabled = false; b.textContent = E.id ? '更新する' : '保存する'; err(e); });
+  };
+  if (!list.length) return;
+  function drawList() {
+    var q = MM.q.trim().toLowerCase();
+    var f = list.filter(function (m) {
+      if (MM.tag && (m.tags || []).indexOf(MM.tag) < 0) return false;
+      return !q || (m.text + ' ' + m.lesson + ' ' + (m.tags || []).join(' ')).toLowerCase().indexOf(q) >= 0;
+    });
+    var out = '', lastYm = '';
+    f.forEach(function (m) {
+      var ym = m.date.slice(0, 7);
+      if (ym !== lastYm) { var p = ym.split('-'); out += '<div class="monthhd">' + (+p[0]) + '年' + (+p[1]) + '月</div>'; lastYm = ym; }
+      var i = list.indexOf(m);
+      var txt = esc(m.text);
+      if (q) txt = txt.replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), function (x) { return '<mark>' + x + '</mark>'; });
+      out += '<div class="past memo" data-i="' + i + '"><div class="h">' + mdLabel(m.date) + (m.lesson ? '・' + esc(m.lesson) : '') +
+        (m.tags || []).map(function (t) { return ' <span class="badge gray">' + esc(t) + '</span>'; }).join('') + '</div><div class="t">' + txt + '</div></div>';
+    });
+    $('mmlist').innerHTML = out || '<div class="muted">見つかりませんでした</div>';
+    Array.prototype.forEach.call($('mmlist').querySelectorAll('.memo'), function (el) {
+      el.onclick = function () { MM.E = JSON.parse(JSON.stringify(list[+el.getAttribute('data-i')])); drawMemo(); window.scrollTo(0, 0); };
+    });
+  }
+  $('mmq').oninput = function () { MM.q = this.value; drawList(); };
+  Array.prototype.forEach.call($('mmfilter').querySelectorAll('.chip2'), function (b) {
+    b.onclick = function () { MM.tag = b.getAttribute('data-v'); Array.prototype.forEach.call($('mmfilter').querySelectorAll('.chip2'), function (x) { x.classList.toggle('on', x === b); }); drawList(); };
+  });
+  drawList();
 }
 
 // ---------- 起動 ----------
