@@ -179,7 +179,7 @@ function attachMic(btn, textarea, onChange) {
 
 // ---------- 講師アプリ ----------
 var S = { me: null, tab: 'day', date: null, days: {} };
-/** 生徒が記入する項目（表示順） */
+/** メンバーが記入する項目（表示順） */
 var PROFILE = [
   { k: 'bigGoal', h: '⭐ 一番の目標', q: '謙遜やネガティブな思い込みなどを全て取り払い、正直に思うピュアな、あなたが一番ゴールとする姿を教えてください。<br>※「〜したい」「〜なりたい」ではなく、「〜する」「〜している」「〜なる」「〜なっている」と書いてください。', rows: 4 },
   { k: 'goal', h: '🎯 半年後の目標', q: '「半年」を過去一の濃密さで走り抜いた先で、できるかできないかギリギリのラインを書いてみてください。「半年でできたらすごいけど、過去一濃密にやり抜けば可能性はあるかも…！？ゾクゾクワクワク」ぐらいが最高です！<br>※「〜する」「〜している」「〜なる」「〜なっている」と、現在形・現在進行形で書いてください。', rows: 4 },
@@ -191,7 +191,7 @@ var PROFILE = [
 ];
 
 function setTabs() {
-  var tabs = [['day', '📅 レッスン'], ['students', '👥 生徒']];
+  var tabs = [['day', '📅 レッスン'], ['students', '👥 メンバー']];
   if (S.me.isAdmin) tabs.push(['admin', '⚙️ 管理']);
   var nav = $('tabs'); nav.style.display = 'flex';
   nav.innerHTML = tabs.map(function (t) { return '<button data-t="' + t[0] + '" class="' + (S.tab === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('');
@@ -226,7 +226,7 @@ function renderDay() {
       else if (isToday) h += '<span class="badge warn">締切 ' + esc(l.deadline) + '</span>';
       h += '</div>';
       if (isToday && l.isMine && !l.confirmedAt) h += '<div class="confirm-bar"><button class="btn block" data-confirm="1">✅ 確認しました</button></div>';
-      if (l.isMine) h += '<div class="confirm-bar"><button class="btn block ghost" data-search="' + i + '">🔍 生徒を探してノートを書く</button></div>';
+      if (l.isMine) h += '<div class="confirm-bar"><button class="btn block ghost" data-search="' + i + '">🔍 メンバーを探してノートを書く</button></div>';
       if (l.students.length) {
         h += '<div class="students"><div class="muted">ノート記入済み</div>';
         l.students.forEach(function (st, j) {
@@ -312,7 +312,7 @@ function renderSearch(ctx) {
         return '<div class="srow" data-id="' + esc(s.id) + '"><div><span class="n">' + esc(s.name) + '</span>' +
           (s.kana ? ' <span class="muted">' + esc(s.kana) + '</span>' : '') + '</div><div class="go">ノート ›</div></div>';
       }).join('');
-      if (!rows.length) html = '<div class="muted" style="padding:12px 0">該当する生徒がいません</div>';
+      if (!rows.length) html = '<div class="muted" style="padding:12px 0">該当するメンバーがいません</div>';
       if (q.value.trim() && !rows.length) {
         html += '<div style="padding:12px 0"><button class="btn small ghost" id="addnew">＋「' + esc(q.value.trim()) + '」さんを新しく登録</button></div>';
       }
@@ -324,7 +324,7 @@ function renderSearch(ctx) {
         var name = q.value.trim();
         var kana = window.prompt(name + ' さんのふりがな（空欄でもOK）', '') || '';
         call('apiAddStudent', TOKEN, name, kana).then(function (r) {
-          toast(r.existed ? '登録済みの生徒です' : name + ' さんを登録しました');
+          toast(r.existed ? '登録済みのメンバーです' : name + ' さんを登録しました');
           openStudent(r.id, { date: date, start: start });
         }).catch(err);
       };
@@ -443,13 +443,13 @@ function renderAdmin() {
     h += '</div>';
 
     h += '<div class="card"><h3>📧 専用リンクをメールで送る</h3><div class="muted" id="mailst">確認中…</div>' +
-      '<div class="row2" style="margin-top:8px"><button class="btn small ghost" id="mailtest">自分にテスト送信</button><button class="btn small" id="mailsend">未送信の生徒に送信</button></div>' +
+      '<div class="row2" style="margin-top:8px"><button class="btn small ghost" id="mailtest">自分にテスト送信</button><button class="btn small" id="mailsend">未送信のメンバーに送信</button></div>' +
       '<div class="status" id="mailres"></div>' +
-      '<div style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px"><div class="muted">⏰ 日時を指定して送信予約（予約時刻に自分へのテスト1通＋未送信の生徒全員へ送信）</div>' +
+      '<div style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px"><div class="muted">⏰ 日時を指定して送信予約（予約時刻に自分へのテスト1通＋未送信のメンバー全員へ送信）</div>' +
       '<div id="schedst" class="status" style="margin:6px 0"></div>' +
       '<div class="row2"><input type="datetime-local" id="schedat" style="border:1.5px solid var(--line);border-radius:12px;padding:8px;font-size:15px;font-family:inherit"><button class="btn small" id="schedbtn" style="flex:none">予約する</button></div></div></div>';
-    h += '<div class="card"><h3>👥 生徒（' + students.length + '名）</h3>' +
-      '<div class="muted">まとめて登録：1行に1人「名前,ふりがな,メール」（ふりがな・メールは省略可）。登録済みの生徒は、ふりがなとメールだけ追加・更新されます。</div>' +
+    h += '<div class="card"><h3>👥 メンバー（' + students.length + '名）</h3>' +
+      '<div class="muted">まとめて登録：1行に1人「名前,ふりがな,メール」（ふりがな・メールは省略可）。登録済みのメンバーは、ふりがなとメールだけ追加・更新されます。</div>' +
       '<textarea id="bulk" rows="4" placeholder="山田 花子,やまだはなこ,hanako@example.com&#10;佐藤 太郎,,taro@example.com" style="margin-top:6px"></textarea>' +
       '<button class="btn small" id="bulkadd" style="margin-top:8px">登録する</button>' +
       '<input type="search" id="aq" placeholder="🔍 検索" style="margin-top:14px">' +
@@ -464,7 +464,7 @@ function renderAdmin() {
 
     function drawStudents() {
       var v = normKana($('aq').value);
-      $('stable').innerHTML = '<tr><th>名前</th><th>生徒用リンク</th></tr>' + students.filter(function (s) {
+      $('stable').innerHTML = '<tr><th>名前</th><th>メンバー用リンク</th></tr>' + students.filter(function (s) {
         return !v || normKana(s.name).indexOf(v) >= 0 || normKana(s.kana).indexOf(v) >= 0;
       }).map(function (s) {
         return '<tr><td>' + esc(s.name) + (s.hasGoal ? '' : ' <span class="badge gray">目標未記入</span>') + (s.sentAt ? ' <span class="badge ok">✉️ 送信済</span>' : (s.email ? ' <span class="badge">✉️ 未送信</span>' : ' <span class="badge gray">メールなし</span>')) + '</td><td><button class="btn small ghost" data-copy="' + esc(s.id) + '">リンクをコピー</button></td></tr>';
@@ -493,7 +493,7 @@ function renderAdmin() {
     $('schedbtn').onclick = function () {
       var v = $('schedat').value;
       if (!v) { toast('日時を選んでください'); return; }
-      if (!window.confirm(v.replace('T', ' ') + ' に、未送信の生徒へのメール送信を予約します。よろしいですか？')) return;
+      if (!window.confirm(v.replace('T', ' ') + ' に、未送信のメンバーへのメール送信を予約します。よろしいですか？')) return;
       call('apiScheduleLinks', TOKEN, v).then(function (r) { toast('⏰ ' + r.scheduledAt + ' に送信予約しました', 5000); mailStatus(); }).catch(err);
     };
     $('mailtest').onclick = function () {
@@ -502,10 +502,10 @@ function renderAdmin() {
     };
     $('mailsend').onclick = function () {
       var n = S.mail ? S.mail.unsent : 0;
-      if (!n || !window.confirm(n + '名の生徒に、専用リンクのメールを送ります。よろしいですか？')) return;
+      if (!n || !window.confirm(n + '名のメンバーに、専用リンクのメールを送ります。よろしいですか？')) return;
       $('mailsend').disabled = true; $('mailres').textContent = '送信中…（人数が多いと1分ほどかかります）';
       call('apiSendStudentLinks', TOKEN, 'unsent').then(function (r) {
-        toast('✅ ' + r.sent + '名に送信しました' + (r.failed.length ? '／送れなかった生徒：' + r.failed.join('、') : '') + (r.remaining ? '／残り ' + r.remaining + '名は明日以降に送ってください' : ''), 8000);
+        toast('✅ ' + r.sent + '名に送信しました' + (r.failed.length ? '／送れなかったメンバー：' + r.failed.join('、') : '') + (r.remaining ? '／残り ' + r.remaining + '名は明日以降に送ってください' : ''), 8000);
         renderAdmin();
       }).catch(function (e) { $('mailsend').disabled = false; $('mailres').textContent = ''; err(e); });
     };
@@ -516,7 +516,7 @@ function renderAdmin() {
   }).catch(err);
 }
 
-// ---------- 生徒ページ ----------
+// ---------- メンバーページ ----------
 var SS = { tab: 'me' };
 function studentTabs() {
   var nav = $('tabs'); nav.style.display = 'flex';
