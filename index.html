@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Kラボ</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#7a1f3d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kラボ">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  :root {
+    --wine: #7a1f3d; --wine-d: #5c162d; --wine-l: #f5e9ee;
+    --gold: #b8924a; --ink: #2a2326; --sub: #7d7177; --line: #e8e0e3;
+    --bg: #faf7f4; --card: #ffffff; --ok: #2e7d4f; --ok-l: #e7f4ec; --warn: #b3412f; --warn-l: #fbebe8;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif;
+    font-size: 16px; line-height: 1.6; }
+  header { background: var(--wine); color: #fff; padding: calc(14px + env(safe-area-inset-top)) 18px 12px; position: sticky; top: 0; z-index: 10; }
+  header .brand { display: flex; align-items: baseline; gap: 10px; }
+  header h1 { font-size: 20px; margin: 0; letter-spacing: .04em; }
+  header small { opacity: .75; font-size: 11px; letter-spacing: .08em; }
+  header .who { font-size: 13px; opacity: .9; margin-top: 2px; }
+  nav.tabs { display: flex; background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: calc(64px + env(safe-area-inset-top)); z-index: 9; }
+  nav.tabs button { flex: 1; border: 0; background: none; padding: 12px 4px; font-size: 15px; color: var(--sub); border-bottom: 3px solid transparent; font-family: inherit; }
+  nav.tabs button.on { color: var(--wine); border-bottom-color: var(--wine); font-weight: 700; }
+  main { padding: 16px; max-width: 680px; margin: 0 auto 80px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .muted { color: var(--sub); font-size: 13px; }
+  .daynav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .daynav .d { font-size: 18px; font-weight: 700; text-align: center; }
+  .daynav .d small { display: block; font-weight: 400; font-size: 12px; color: var(--sub); }
+  .iconbtn { border: 1px solid var(--line); background: #fff; width: 44px; height: 44px; border-radius: 22px; font-size: 18px; color: var(--wine); }
+  .lesson .time { font-size: 20px; font-weight: 700; color: var(--wine); }
+  .lesson .title { font-weight: 700; margin-top: 2px; }
+  .badge { display: inline-block; font-size: 12px; padding: 2px 10px; border-radius: 99px; background: var(--wine-l); color: var(--wine); margin-right: 6px; vertical-align: middle; }
+  .badge.ok { background: var(--ok-l); color: var(--ok); }
+  .badge.warn { background: var(--warn-l); color: var(--warn); }
+  .badge.gray { background: #f0eef0; color: var(--sub); }
+  .students { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 8px; }
+  .srow { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-bottom: 1px solid #f3eef0; cursor: pointer; }
+  .srow:last-child { border-bottom: 0; }
+  .srow .n { font-size: 17px; font-weight: 600; }
+  .srow .go { color: var(--wine); font-size: 14px; white-space: nowrap; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 12px; padding: 12px 18px;
+    font-size: 16px; font-weight: 700; font-family: inherit; background: var(--wine); color: #fff; cursor: pointer; }
+  .btn:active { background: var(--wine-d); }
+  .btn.ghost { background: #fff; color: var(--wine); border: 1.5px solid var(--wine); }
+  .btn.small { padding: 7px 12px; font-size: 13px; border-radius: 10px; white-space: nowrap; }
+  .btn.block { width: 100%; }
+  .btn[disabled] { opacity: .5; }
+  .confirm-bar { margin-top: 12px; }
+  h2 { font-size: 22px; margin: 4px 0 2px; }
+  h3 { font-size: 14px; color: var(--wine); margin: 0 0 6px; letter-spacing: .05em; }
+  .prof p { white-space: pre-wrap; margin: 0; }
+  .empty { color: var(--sub); font-style: italic; }
+  textarea, input[type=text], input[type=search] { width: 100%; border: 1.5px solid var(--line); border-radius: 12px; padding: 12px; font-size: 16px; font-family: inherit; background: #fff; color: var(--ink); }
+  textarea:focus, input:focus { outline: none; border-color: var(--wine); }
+  textarea.note { min-height: 220px; resize: vertical; }
+  .editorbar { display: flex; gap: 8px; align-items: center; margin: 8px 0; flex-wrap: wrap; }
+  .chip { border: 1px solid var(--line); background: #fff; border-radius: 99px; padding: 6px 12px; font-size: 13px; font-family: inherit; color: var(--ink); }
+  .mic { width: 56px; height: 56px; border-radius: 28px; border: 0; background: var(--gold); color: #fff; font-size: 24px; flex: none; }
+  .mic.rec { background: var(--warn); animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(179,65,47,.5); } 70% { box-shadow: 0 0 0 14px rgba(179,65,47,0); } 100% { box-shadow: 0 0 0 0 rgba(179,65,47,0); } }
+  .savebar { padding: 12px 0 4px; display: flex; gap: 10px; align-items: center; }
+  .status { font-size: 13px; color: var(--sub); }
+  .past { border-left: 3px solid var(--wine-l); padding: 4px 0 4px 12px; margin: 12px 0; }
+  .past .h { font-size: 13px; color: var(--sub); }
+  .past .t { white-space: pre-wrap; }
+  .mate summary { list-style: none; cursor: pointer; }
+  .mate summary::-webkit-details-marker { display: none; }
+  .mate .n { font-size: 17px; font-weight: 700; }
+  .mate .mg { margin-top: 4px; }
+  .mate[open] .mg { display: none; }
+  .pf.sep { border-top: 1px dashed var(--line); margin-top: 12px; padding-top: 12px; }
+  .pastlist { max-height: 55vh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 4px; }
+  .back { background: none; border: 0; color: var(--wine); font-size: 15px; padding: 4px 0 10px; font-family: inherit; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td, th { padding: 8px 6px; border-bottom: 1px solid #f1ecee; text-align: left; vertical-align: top; }
+  th { color: var(--sub); font-weight: 500; font-size: 12px; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 99px; font-size: 14px; z-index: 50; opacity: 0; transition: opacity .25s; pointer-events: none; max-width: 90vw; text-align: center; }
+  .toast.show { opacity: .95; }
+  .loading { text-align: center; color: var(--sub); padding: 40px 0; }
+  .hint { background: var(--wine-l); border-radius: 12px; padding: 10px 14px; font-size: 13px; color: var(--wine-d); margin-bottom: 14px; }
+  .row2 { display: flex; gap: 8px; }
+  .row2 > * { flex: 1; }
+  .sel { width: 100%; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 15px; font-family: inherit; background: #fff; color: var(--ink); margin-top: 6px; }
+  .install { background: #fff; border: 1.5px solid var(--gold); border-radius: 12px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; position: relative; }
+  .install b { color: var(--wine); }
+  .install .x { position: absolute; right: 8px; top: 4px; border: 0; background: none; font-size: 18px; color: var(--sub); }
+  .count { font-size: 12px; color: var(--sub); text-align: right; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><h1>Kラボ</h1><small>K MUSICAL SINGING LAB</small></div>
+  <div class="who" id="who"></div>
+</header>
+<nav class="tabs" id="tabs" style="display:none"></nav>
+<main id="app"><div class="loading">読み込み中…</div></main>
+<div class="toast" id="toast"></div>
+
+<script>
+var Q = new URLSearchParams(location.search);
+var MODE = Q.get('k') ? 'staff' : (Q.get('s') ? 'student' : 'none');
+var TOKEN = Q.get('k') || Q.get('s') || '';
+var API_URL = 'https://script.google.com/macros/s/AKfycbyLZraGgEn4AaEuwIDTfP8TJOv4M20hXvSyE7m3hlOjYAWsFNhIJ77XFgtRvGlidTkR/exec';
+
+// ---------- 共通 ----------
+function call(fn) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ api: fn, args: args }) })
+    .then(function (r) { if (!r.ok) throw new Error('通信エラー（' + r.status + '）。電波の良いところでもう一度お試しください。'); return r.json(); })
+    .then(function (j) { if (!j.ok) throw new Error(j.error); return j.result; })
+    .catch(function (e) { if (e && /Failed to fetch|NetworkError|Load failed/.test(e.message)) throw new Error('通信できませんでした。電波の良いところでもう一度お試しください。'); throw e; });
+}
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function toast(msg, ms) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove('show'); }, ms || 2200); }
+function err(e) { toast((e && e.message) ? e.message : String(e), 4000); }
+function mdLabel(dateStr) { var p = dateStr.split('-'); return (+p[1]) + '/' + (+p[2]); }
+function addDays(dateStr, n) {
+  var d = new Date(dateStr + 'T12:00:00'); d.setDate(d.getDate() + n);
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+var store = {
+  get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del: function (k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+function copyText(text) {
+  var done = function () { toast('コピーしました'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+  } else { fallbackCopy(text); done(); }
+}
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(ta);
+}
+
+// ---------- 音声入力 ----------
+// ブラウザの音声認識が使えない環境では、スマホのキーボードのマイクで入力できるよう案内します。
+function attachMic(btn, textarea, onChange) {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var rec = null, active = false;
+  btn.addEventListener('click', function () {
+    if (!SR) { toast('このブラウザでは🎤ボタンが使えません。キーボードのマイクで話してください', 4500); textarea.focus(); return; }
+    if (active) { rec.stop(); return; }
+    rec = new SR();
+    rec.lang = 'ja-JP'; rec.continuous = true; rec.interimResults = true;
+    var base = textarea.value, finalText = '';
+    if (base && !/\n$/.test(base)) base += '\n';
+    rec.onresult = function (ev) {
+      var interim = '';
+      for (var i = ev.resultIndex; i < ev.results.length; i++) {
+        if (ev.results[i].isFinal) finalText += ev.results[i][0].transcript + '。';
+        else interim += ev.results[i][0].transcript;
+      }
+      textarea.value = base + finalText + interim;
+      if (onChange) onChange();
+    };
+    rec.onerror = function (ev) {
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed' || ev.error === 'audio-capture') {
+        toast('マイクが使えませんでした。キーボードのマイクで話してください', 4500);
+      } else if (ev.error !== 'no-speech' && ev.error !== 'aborted') { toast('音声入力エラー：' + ev.error); }
+    };
+    rec.onend = function () { active = false; btn.classList.remove('rec'); btn.textContent = '🎤'; textarea.value = base + finalText; if (onChange) onChange(); };
+    try { rec.start(); active = true; btn.classList.add('rec'); btn.textContent = '■'; toast('話してください（もう一度押すと停止）'); }
+    catch (e) { toast('音声入力を開始できませんでした。キーボードのマイクで話してください', 4500); }
+  });
+}
+
+// ---------- 講師アプリ ----------
+var S = { me: null, tab: 'day', date: null, days: {} };
+/** 生徒が記入する項目（表示順） */
+var PROFILE = [
+  { k: 'bigGoal', h: '⭐ 一番の目標', q: '謙遜やネガティブな思い込みなどを全て取り払い、正直に思うピュアな、あなたが一番ゴールとする姿を教えてください。<br>※「〜したい」「〜なりたい」ではなく、「〜する」「〜している」「〜なる」「〜なっている」と書いてください。', rows: 4 },
+  { k: 'goal', h: '🎯 半年後の目標', q: '「半年」を過去一の濃密さで走り抜いた先で、できるかできないかギリギリのラインを書いてみてください。「半年でできたらすごいけど、過去一濃密にやり抜けば可能性はあるかも…！？ゾクゾクワクワク」ぐらいが最高です！<br>※「〜する」「〜している」「〜なる」「〜なっている」と、現在形・現在進行形で書いてください。', rows: 4 },
+  { k: 'songs', h: '🎵 半年間で取り組みたい曲と、その狙い', q: '基本は1ヶ月に1曲を、どんな場でも歌えるぐらいに仕上げるペースの方が多いですが、曲数は自由です（途中で変更してもOK）。半年の中で1曲は、ぜひ英語の曲を入れてください。', rows: 5 },
+  { k: 'intro', h: '🙋 自己紹介', q: 'あなたなりに、あなたらしく書いてください♪', rows: 6 },
+  { k: 'singing', h: '🎤 歌歴', q: 'いつ頃から、どんなところで学び、活動してきたか（履歴書ほど細かくなくてOK。履歴書のコピペでもOK）', rows: 3 },
+  { k: 'acting', h: '🎭 演技歴', q: 'いつ頃から、どんなところで学び、活動してきたか（履歴書ほど細かくなくてOK）', rows: 3 },
+  { k: 'dance', h: '💃 ダンス歴', q: 'いつ頃から、どんなところで学び、活動してきたか（履歴書ほど細かくなくてOK）', rows: 3 }
+];
+
+function setTabs() {
+  var tabs = [['day', '📅 レッスン'], ['students', '👥 生徒']];
+  if (S.me.isAdmin) tabs.push(['admin', '⚙️ 管理']);
+  var nav = $('tabs'); nav.style.display = 'flex';
+  nav.innerHTML = tabs.map(function (t) { return '<button data-t="' + t[0] + '" class="' + (S.tab === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('');
+  Array.prototype.forEach.call(nav.querySelectorAll('button'), function (b) {
+    b.onclick = function () { S.tab = b.getAttribute('data-t'); setTabs(); route(); };
+  });
+}
+function route() {
+  if (S.tab === 'day') return renderDay();
+  if (S.tab === 'students') return renderStudentList();
+  if (S.tab === 'admin') return renderAdmin();
+}
+
+function renderDay() {
+  var app = $('app');
+  app.innerHTML = '<div class="loading">読み込み中…</div>';
+  call('apiDay', TOKEN, S.date).then(function (d) {
+    S.days[d.date] = d;
+    var isToday = d.date === S.me.today;
+    var h = '<div class="daynav"><button class="iconbtn" id="prev">◀</button>' +
+      '<div class="d">' + mdLabel(d.date) + '（' + d.weekday + '）<small>' + (isToday ? '今日' : '<a href="#" id="today">今日に戻る</a>') + '</small></div>' +
+      '<button class="iconbtn" id="next">▶</button></div>';
+    if (!S.me.lineRegistered) h += '<div class="hint">LINE登録がまだです。講師連絡用LINEに「登録 6桁のコード」を送ってください。</div>';
+    if (!d.lessons.length) h += '<div class="card muted">この日のレッスンはありません。</div>';
+    d.lessons.forEach(function (l, i) {
+      h += '<div class="card lesson">';
+      h += '<div class="time">' + esc(l.start) + '〜' + esc(l.end) + '</div>';
+      if (S.me.isAdmin && !l.isMine) h += '<div class="muted">講師：' + esc(l.teacher) + '</div>';
+      if (l.title) h += '<div class="title">' + esc(l.title) + '</div>';
+      h += '<div style="margin-top:6px">' + (l.online ? '<span class="badge">💻 オンライン</span>' : '<span class="badge">📍 ' + esc(l.place) + '</span>');
+      if (l.confirmedAt) h += '<span class="badge ok">✅ ' + esc(l.confirmedAt) + ' 確認済み</span>';
+      else if (isToday) h += '<span class="badge warn">締切 ' + esc(l.deadline) + '</span>';
+      h += '</div>';
+      if (isToday && l.isMine && !l.confirmedAt) h += '<div class="confirm-bar"><button class="btn block" data-confirm="1">✅ 確認しました</button></div>';
+      if (l.isMine) h += '<div class="confirm-bar"><button class="btn block ghost" data-search="' + i + '">🔍 生徒を探してノートを書く</button></div>';
+      if (l.students.length) {
+        h += '<div class="students"><div class="muted">ノート記入済み</div>';
+        l.students.forEach(function (st, j) {
+          h += '<div class="srow" data-l="' + i + '" data-s="' + j + '"><div><span class="n">' + esc(st.name) + '</span> <span class="badge ok">ノート済</span></div><div class="go">開く ›</div></div>';
+        });
+        h += '</div>';
+      }
+      h += '</div>';
+    });
+    app.innerHTML = h;
+    $('prev').onclick = function () { S.date = addDays(d.date, -1); renderDay(); };
+    $('next').onclick = function () { S.date = addDays(d.date, 1); renderDay(); };
+    if ($('today')) $('today').onclick = function (e) { e.preventDefault(); S.date = S.me.today; renderDay(); };
+    Array.prototype.forEach.call(app.querySelectorAll('[data-confirm]'), function (b) {
+      b.onclick = function () {
+        b.disabled = true; b.textContent = '送信中…';
+        call('apiConfirm', TOKEN, d.date).then(function () { toast('確認しました。よろしくお願いします！'); renderDay(); }).catch(function (e) { b.disabled = false; b.textContent = '✅ 確認しました'; err(e); });
+      };
+    });
+    Array.prototype.forEach.call(app.querySelectorAll('[data-search]'), function (b) {
+      b.onclick = function () { var l = d.lessons[+b.getAttribute('data-search')]; renderSearch({ date: d.date, start: l.start }); };
+    });
+    Array.prototype.forEach.call(app.querySelectorAll('.srow'), function (row) {
+      row.onclick = function () {
+        var l = d.lessons[+row.getAttribute('data-l')], st = l.students[+row.getAttribute('data-s')];
+        openStudent(st.id, { date: d.date, start: l.start });
+      };
+    });
+  }).catch(err);
+}
+
+/** ひらがな・カタカナ・空白を揃えて検索 */
+function normKana(s) {
+  return String(s || '').replace(/[ァ-ヶ]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0x60); })
+    .replace(/[\s　]/g, '').toLowerCase();
+}
+function lessonLabel(l) { return l.start + '〜 ' + (l.title || (l.online ? 'オンライン' : l.place)); }
+/** その日の自分のレッスン（ノートの紐づけ先の候補） */
+function lessonOptions(date) {
+  var d = S.days[date];
+  if (!d) return [];
+  var mine = d.lessons.filter(function (l) { return l.isMine; });
+  return (S.me.isAdmin || !mine.length) ? d.lessons : mine;
+}
+/** 今の時刻に一番近い（始まっている／これから始まる）自分のレッスン */
+function guessLesson(date) {
+  var opts = lessonOptions(date).filter(function (l) { return l.isMine; });
+  if (!opts.length) opts = lessonOptions(date);
+  if (!opts.length) return '';
+  if (date !== S.me.today) return opts[0].start;
+  var now = S.me.now, pick = opts[0].start;
+  opts.forEach(function (l) { if (l.start <= addMin(now, 30)) pick = l.start; });
+  return pick;
+}
+function addMin(hhmm, n) { var p = hhmm.split(':'), m = (+p[0]) * 60 + (+p[1]) + n; return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2); }
+
+function ensureDay(date) {
+  if (S.days[date]) return Promise.resolve(S.days[date]);
+  return call('apiDay', TOKEN, date).then(function (d) { S.days[d.date] = d; return d; });
+}
+
+function renderSearch(ctx) {
+  var app = $('app');
+  window.scrollTo(0, 0);
+  app.innerHTML = '<div class="loading">読み込み中…</div>';
+  var date = (ctx && ctx.date) || S.me.today;
+  Promise.all([call('apiStudents', TOKEN), ensureDay(date)]).then(function (res) {
+    var list = res[0];
+    var start = ctx && ctx.start !== undefined ? ctx.start : guessLesson(date);
+    var lesson = lessonOptions(date).filter(function (l) { return l.start === start; })[0];
+    var h = '';
+    if (ctx && ctx.fromLesson !== false && S.tab === 'day') h += '<button class="back" id="back">‹ 戻る</button>';
+    h += '<div class="muted" style="margin-bottom:6px">' + (lesson ? '📝 ' + mdLabel(date) + ' ' + esc(lessonLabel(lesson)) + ' のノート' : '📝 ' + mdLabel(date) + ' のメモ') + '</div>';
+    h += '<input type="search" id="q" placeholder="🔍 名前・ふりがなで検索" autocomplete="off">';
+    h += '<div class="card" style="margin-top:12px;padding:6px 14px" id="list"></div>';
+    app.innerHTML = h;
+    var q = $('q');
+    if ($('back')) $('back').onclick = function () { route(); };
+    function draw() {
+      var v = normKana(q.value);
+      var rows = list.filter(function (s) { return !v || normKana(s.name).indexOf(v) >= 0 || normKana(s.kana).indexOf(v) >= 0; });
+      var html = rows.slice(0, 100).map(function (s) {
+        return '<div class="srow" data-id="' + esc(s.id) + '"><div><span class="n">' + esc(s.name) + '</span>' +
+          (s.kana ? ' <span class="muted">' + esc(s.kana) + '</span>' : '') + '</div><div class="go">ノート ›</div></div>';
+      }).join('');
+      if (!rows.length) html = '<div class="muted" style="padding:12px 0">該当する生徒がいません</div>';
+      if (q.value.trim() && !rows.length) {
+        html += '<div style="padding:12px 0"><button class="btn small ghost" id="addnew">＋「' + esc(q.value.trim()) + '」さんを新しく登録</button></div>';
+      }
+      $('list').innerHTML = html;
+      Array.prototype.forEach.call($('list').querySelectorAll('.srow'), function (r) {
+        r.onclick = function () { openStudent(r.getAttribute('data-id'), { date: date, start: start }); };
+      });
+      if ($('addnew')) $('addnew').onclick = function () {
+        var name = q.value.trim();
+        var kana = window.prompt(name + ' さんのふりがな（空欄でもOK）', '') || '';
+        call('apiAddStudent', TOKEN, name, kana).then(function (r) {
+          toast(r.existed ? '登録済みの生徒です' : name + ' さんを登録しました');
+          openStudent(r.id, { date: date, start: start });
+        }).catch(err);
+      };
+    }
+    q.oninput = draw; draw();
+    setTimeout(function () { q.focus(); }, 50);
+  }).catch(err);
+}
+
+function openStudent(studentId, ctx) {
+  var app = $('app');
+  window.scrollTo(0, 0);
+  app.innerHTML = '<div class="loading">読み込み中…</div>';
+  Promise.all([call('apiStudentForTeacher', TOKEN, studentId, ctx.date, ctx.start || ''), ensureDay(ctx.date)]).then(function (res) {
+    var st = res[0];
+    var opts = lessonOptions(ctx.date);
+    var cur = { start: ctx.start || '' };
+    var h = '<button class="back" id="back">‹ 戻る</button>';
+    h += '<h2>' + esc(st.name) + '</h2>';
+    var pf = st.profile || {};
+    h += '<div class="card prof">' + PROFILE.map(function (f, i) {
+      return '<div class="pf' + (i ? ' sep' : '') + '"><h3>' + f.h + '</h3>' + (pf[f.k] ? '<p>' + esc(pf[f.k]) + '</p>' : '<p class="empty">未記入</p>') + '</div>';
+    }).join('') + '</div>';
+    h += '<div id="pastwrap"></div>';
+    h += '<div class="card"><h3>✏️ レッスンノート（' + mdLabel(ctx.date) + '）</h3>';
+    h += '<select id="lsel" class="sel">' + opts.map(function (l) {
+      return '<option value="' + esc(l.start) + '">' + esc(lessonLabel(l)) + (S.me.isAdmin && !l.isMine ? '（' + esc(l.teacher) + '）' : '') + '</option>';
+    }).join('') + '<option value="">レッスン外のメモ</option></select>';
+    h += '<div class="editorbar">' +
+      ['今日やったこと', '良かった点', '課題', '次回までの宿題'].map(function (c) { return '<button class="chip" data-chip="' + c + '">＋' + c + '</button>'; }).join('') + '</div>';
+    h += '<textarea class="note" id="note" placeholder="手で打つか、🎤を押して話してください"></textarea>';
+    h += '<div class="count" id="count"></div>';
+    h += '<div class="savebar"><button class="mic" id="mic" aria-label="音声入力">🎤</button>' +
+      '<button class="btn" id="save" style="flex:1">保存する</button></div><div class="status" id="st"></div></div>';
+    app.innerHTML = h;
+    var ta = $('note'), stEl = $('st'), sel = $('lsel');
+    var noteId = null, dirty = false;
+    function draftKey() { return 'draft:' + studentId + ':' + ctx.date + ':' + cur.start; }
+    function mineFor(start) {
+      return st.notes.filter(function (n) { return n.date === ctx.date && n.start === start && n.teacher === S.me.name; })[0] || null;
+    }
+    function load() {
+      var n = mineFor(cur.start);
+      noteId = n ? n.id : null;
+      var draft = store.get(draftKey());
+      ta.value = draft !== null ? draft : (n ? n.text : '');
+      dirty = draft !== null;
+      stEl.textContent = dirty ? '前回の下書きを復元しました（未保存）' : (n ? '保存済み（' + n.updated + '）' : '');
+      $('count').textContent = ta.value.length + '文字';
+      var past = st.notes.filter(function (x) { return x.id !== noteId; });
+      $('pastwrap').innerHTML = '<div class="card"><h3>📖 これまでのノート（' + past.length + '件・全講師）</h3>' + (past.length ? '<div class="pastlist">' + past.map(function (x) {
+        return '<div class="past"><div class="h">' + mdLabel(x.date) + (x.start ? ' ' + esc(x.start) : '') + '・' + esc(x.teacher) + '</div><div class="t">' + esc(x.text) + '</div></div>';
+      }).join('') + '</div>' : '<div class="muted">まだノートはありません（初回レッスン）</div>') + '</div>';
+    }
+    sel.value = cur.start;
+    if (sel.selectedIndex < 0 || sel.value !== cur.start) { sel.value = ''; cur.start = ''; }
+    load();
+    sel.onchange = function () {
+      if (dirty && !window.confirm('保存していない変更があります。切り替えますか？（下書きはこの端末に残ります）')) { sel.value = cur.start; return; }
+      cur.start = sel.value; load();
+    };
+    function onChange() {
+      dirty = true; store.set(draftKey(), ta.value);
+      $('count').textContent = ta.value.length + '文字';
+      stEl.textContent = '未保存の変更があります';
+    }
+    ta.addEventListener('input', onChange);
+    attachMic($('mic'), ta, onChange);
+    Array.prototype.forEach.call(app.querySelectorAll('[data-chip]'), function (c) {
+      c.onclick = function () {
+        var v = ta.value; if (v && !/\n$/.test(v)) v += '\n';
+        ta.value = v + '【' + c.getAttribute('data-chip') + '】\n'; onChange(); ta.focus();
+        ta.selectionStart = ta.selectionEnd = ta.value.length;
+      };
+    });
+    $('save').onclick = function () {
+      var b = $('save'); b.disabled = true; b.textContent = '保存中…';
+      var text = ta.value;
+      call('apiSaveNote', TOKEN, studentId, ctx.date, cur.start, text, noteId).then(function (id) {
+        var n = mineFor(cur.start), now = S.me.today + ' ' + new Date().toTimeString().slice(0, 5);
+        if (n) { n.text = text; n.updated = now; } else st.notes.unshift({ id: id, date: ctx.date, start: cur.start, teacher: S.me.name, text: text, updated: now });
+        noteId = id; dirty = false; store.del(draftKey());
+        delete S.days[ctx.date];
+        b.disabled = false; b.textContent = '保存する'; stEl.textContent = '✅ 保存しました';
+        toast('保存しました');
+      }).catch(function (e) { b.disabled = false; b.textContent = '保存する'; err(e); });
+    };
+    $('back').onclick = function () {
+      if (dirty && !window.confirm('保存していない変更があります。戻りますか？（下書きはこの端末に残ります）')) return;
+      if (S.tab === 'students') renderSearch({ date: ctx.date, start: cur.start }); else route();
+    };
+  }).catch(err);
+}
+
+function renderStudentList() { renderSearch(null); }
+
+function renderAdmin() {
+  var app = $('app');
+  app.innerHTML = '<div class="loading">読み込み中…</div>';
+  Promise.all([call('apiAdmin', TOKEN), call('apiStudents', TOKEN)]).then(function (res) {
+    var a = res[0], students = res[1];
+    var h = '';
+    if (!a.lineReady) h += '<div class="hint">LINEのトークンがまだ設定されていません。データ用スプレッドシートの「設定」シートに入れてください。</div>';
+    h += '<div class="card"><h3>📋 今日の確認状況（' + mdLabel(a.today) + '）</h3>';
+    if (!a.status.length) h += '<div class="muted">今日のレッスンはありません</div>';
+    else {
+      h += '<table><tr><th>講師</th><th>締切</th><th>状況</th></tr>';
+      a.status.forEach(function (s) {
+        var st = s.confirmedAt ? '<span class="badge ok">✅ ' + esc(s.confirmedAt) + '</span>' :
+          (s.reminded === 'LINE未登録' ? '<span class="badge warn">LINE未登録</span>' :
+          (s.reminded ? '<span class="badge warn">未確認</span>' : '<span class="badge gray">' + esc(s.reminderAt) + ' 送信予定</span>'));
+        h += '<tr><td><b>' + esc(s.teacher) + '</b><div class="muted">' + s.lessons.map(esc).join('<br>') + '</div></td><td>' + esc(s.deadline) + '</td><td>' + st + '</td></tr>';
+      });
+      h += '</table>';
+    }
+    h += '</div>';
+
+    h += '<div class="card"><h3>📧 専用リンクをメールで送る</h3><div class="muted" id="mailst">確認中…</div>' +
+      '<div class="row2" style="margin-top:8px"><button class="btn small ghost" id="mailtest">自分にテスト送信</button><button class="btn small" id="mailsend">未送信の生徒に送信</button></div>' +
+      '<div class="status" id="mailres"></div>' +
+      '<div style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px"><div class="muted">⏰ 日時を指定して送信予約（予約時刻に自分へのテスト1通＋未送信の生徒全員へ送信）</div>' +
+      '<div id="schedst" class="status" style="margin:6px 0"></div>' +
+      '<div class="row2"><input type="datetime-local" id="schedat" style="border:1.5px solid var(--line);border-radius:12px;padding:8px;font-size:15px;font-family:inherit"><button class="btn small" id="schedbtn" style="flex:none">予約する</button></div></div></div>';
+    h += '<div class="card"><h3>👥 生徒（' + students.length + '名）</h3>' +
+      '<div class="muted">まとめて登録：1行に1人「名前,ふりがな,メール」（ふりがな・メールは省略可）。登録済みの生徒は、ふりがなとメールだけ追加・更新されます。</div>' +
+      '<textarea id="bulk" rows="4" placeholder="山田 花子,やまだはなこ,hanako@example.com&#10;佐藤 太郎,,taro@example.com" style="margin-top:6px"></textarea>' +
+      '<button class="btn small" id="bulkadd" style="margin-top:8px">登録する</button>' +
+      '<input type="search" id="aq" placeholder="🔍 検索" style="margin-top:14px">' +
+      '<table style="margin-top:8px" id="stable"></table></div>';
+
+    h += '<div class="card"><h3>🎤 講師・スタッフ</h3><div class="muted">「案内文」をコピーして先生に送ると、LINE登録と専用ページの準備ができます。</div><table><tr><th>名前</th><th>コード</th><th>LINE</th><th></th></tr>' +
+      a.staff.map(function (s, i) {
+        return '<tr><td>' + esc(s.name) + (s.isAdmin ? ' <span class="badge">管理者</span>' : '') + '</td><td>' + esc(s.code) + '</td><td>' +
+          (s.line ? '<span class="badge ok">登録済</span>' : '<span class="badge gray">未</span>') + '</td><td><button class="btn small ghost" data-inv="' + i + '">案内文</button></td></tr>';
+      }).join('') + '</table></div>';
+    app.innerHTML = h;
+
+    function drawStudents() {
+      var v = normKana($('aq').value);
+      $('stable').innerHTML = '<tr><th>名前</th><th>生徒用リンク</th></tr>' + students.filter(function (s) {
+        return !v || normKana(s.name).indexOf(v) >= 0 || normKana(s.kana).indexOf(v) >= 0;
+      }).map(function (s) {
+        return '<tr><td>' + esc(s.name) + (s.hasGoal ? '' : ' <span class="badge gray">目標未記入</span>') + (s.sentAt ? ' <span class="badge ok">✉️ 送信済</span>' : (s.email ? ' <span class="badge">✉️ 未送信</span>' : ' <span class="badge gray">メールなし</span>')) + '</td><td><button class="btn small ghost" data-copy="' + esc(s.id) + '">リンクをコピー</button></td></tr>';
+      }).join('');
+      Array.prototype.forEach.call($('stable').querySelectorAll('[data-copy]'), function (b) {
+        b.onclick = function () { var s = students.filter(function (x) { return x.id === b.getAttribute('data-copy'); })[0]; copyText(s.link); };
+      });
+    }
+    $('aq').oninput = drawStudents; drawStudents();
+    Array.prototype.forEach.call(app.querySelectorAll('[data-inv]'), function (b) {
+      b.onclick = function () { copyText(a.staff[+b.getAttribute('data-inv')].invite); };
+    });
+    function mailStatus() {
+      call('apiMailStatus', TOKEN).then(function (m) {
+        S.mail = m;
+        $('mailst').textContent = 'メール登録 ' + m.withEmail + '名／未送信 ' + m.unsent + '名（今日送れる残り ' + m.quota + '通・送信元 ' + m.me + '）';
+        $('mailsend').disabled = !m.unsent;
+        $('schedst').innerHTML = m.scheduledAt ? '✅ <b>' + esc(m.scheduledAt) + '</b> に送信予約中 <button class="btn small ghost" id="schedcancel">取り消す</button>' : '予約はありません';
+        if ($('schedcancel')) $('schedcancel').onclick = function () {
+          if (!window.confirm('送信予約を取り消しますか？')) return;
+          call('apiCancelScheduledLinks', TOKEN).then(function () { toast('予約を取り消しました'); mailStatus(); }).catch(err);
+        };
+      }).catch(function (e) { $('mailst').textContent = ''; err(e); });
+    }
+    mailStatus();
+    $('schedbtn').onclick = function () {
+      var v = $('schedat').value;
+      if (!v) { toast('日時を選んでください'); return; }
+      if (!window.confirm(v.replace('T', ' ') + ' に、未送信の生徒へのメール送信を予約します。よろしいですか？')) return;
+      call('apiScheduleLinks', TOKEN, v).then(function (r) { toast('⏰ ' + r.scheduledAt + ' に送信予約しました', 5000); mailStatus(); }).catch(err);
+    };
+    $('mailtest').onclick = function () {
+      $('mailres').textContent = '送信中…';
+      call('apiSendStudentLinks', TOKEN, 'test').then(function (r) { $('mailres').textContent = '✅ ' + r.to + ' にテストメールを送りました。内容を確認してください。'; }).catch(function (e) { $('mailres').textContent = ''; err(e); });
+    };
+    $('mailsend').onclick = function () {
+      var n = S.mail ? S.mail.unsent : 0;
+      if (!n || !window.confirm(n + '名の生徒に、専用リンクのメールを送ります。よろしいですか？')) return;
+      $('mailsend').disabled = true; $('mailres').textContent = '送信中…（人数が多いと1分ほどかかります）';
+      call('apiSendStudentLinks', TOKEN, 'unsent').then(function (r) {
+        toast('✅ ' + r.sent + '名に送信しました' + (r.failed.length ? '／送れなかった生徒：' + r.failed.join('、') : '') + (r.remaining ? '／残り ' + r.remaining + '名は明日以降に送ってください' : ''), 8000);
+        renderAdmin();
+      }).catch(function (e) { $('mailsend').disabled = false; $('mailres').textContent = ''; err(e); });
+    };
+    $('bulkadd').onclick = function () {
+      var t = $('bulk').value.trim(); if (!t) return;
+      call('apiAddStudentsBulk', TOKEN, t).then(function (r) { toast(r.added + '名を登録' + (r.updated ? '・' + r.updated + '名を更新' : '') + 'しました' + (r.skipped ? '（' + r.skipped + '名は変更なし）' : '')); renderAdmin(); }).catch(err);
+    };
+  }).catch(err);
+}
+
+// ---------- 生徒ページ ----------
+var SS = { tab: 'me' };
+function studentTabs() {
+  var nav = $('tabs'); nav.style.display = 'flex';
+  nav.innerHTML = [['me', '✏️ 自分のページ'], ['class', '👥 みんなの自己紹介']].map(function (t) {
+    return '<button data-t="' + t[0] + '" class="' + (SS.tab === t[0] ? 'on' : '') + '">' + t[1] + '</button>';
+  }).join('');
+  Array.prototype.forEach.call(nav.querySelectorAll('button'), function (b) {
+    b.onclick = function () { SS.tab = b.getAttribute('data-t'); studentTabs(); if (SS.tab === 'me') renderStudentSelf(); else renderClassmates(); };
+  });
+}
+function renderStudentSelf() {
+  var app = $('app');
+  app.innerHTML = '<div class="loading">読み込み中…</div>';
+  call('apiStudentSelf', TOKEN).then(function (st) {
+    $('who').textContent = st.name + ' さんのページ';
+    var p = st.profile || {};
+    var h = '<div class="hint">ここに書いた内容は、Kラボの講師陣と第7期の仲間（「みんなの自己紹介」）が見られます。各欄の🎤を押して話すと文字になります。</div>';
+    PROFILE.forEach(function (f) {
+      h += '<div class="card"><h3>' + f.h + '</h3><div class="muted">' + f.q + '</div>' +
+        '<div class="editorbar"><button class="mic" id="mic_' + f.k + '">🎤</button></div>' +
+        '<textarea id="f_' + f.k + '" rows="' + f.rows + '">' + esc(p[f.k]) + '</textarea></div>';
+    });
+    h += '<button class="btn block" id="save">保存する</button><div class="status" id="st" style="text-align:center;margin-top:8px">' + (st.updated ? '最終更新：' + esc(st.updated) : '') + '</div>';
+    app.innerHTML = h;
+    PROFILE.forEach(function (f) { attachMic($('mic_' + f.k), $('f_' + f.k)); });
+    $('save').onclick = function () {
+      var b = $('save'); b.disabled = true; b.textContent = '保存中…';
+      var data = {};
+      PROFILE.forEach(function (f) { data[f.k] = $('f_' + f.k).value; });
+      call('apiStudentSave', TOKEN, data).then(function () {
+        b.disabled = false; b.textContent = '保存する'; $('st').textContent = '✅ 保存しました'; toast('保存しました');
+      }).catch(function (e) { b.disabled = false; b.textContent = '保存する'; err(e); });
+    };
+  }).catch(function (e) { app.innerHTML = '<div class="card">' + esc(e.message || e) + '</div>'; });
+}
+function renderClassmates() {
+  var app = $('app');
+  app.innerHTML = '<div class="loading">読み込み中…</div>';
+  call('apiClassmates', TOKEN).then(function (list) {
+    var h = '<div class="hint">第7期の仲間の目標と自己紹介です。お互いに応援し合いましょう📣</div>';
+    h += '<input type="search" id="cq" placeholder="🔍 名前で検索">';
+    h += '<div id="clist" style="margin-top:12px"></div>';
+    app.innerHTML = h;
+    function draw() {
+      var v = normKana($('cq').value);
+      var rows = list.filter(function (s) { return !v || normKana(s.name).indexOf(v) >= 0 || normKana(s.kana).indexOf(v) >= 0; });
+      $('clist').innerHTML = rows.length ? rows.map(function (s) {
+        var p = s.profile || {};
+        return '<details class="card mate"><summary><span class="n">' + esc(s.name) + '</span>' + (s.isMe ? ' <span class="badge">あなた</span>' : '') +
+          (p.bigGoal ? '<div class="muted mg">⭐ ' + esc(p.bigGoal) + '</div>' : '') + '</summary>' +
+          PROFILE.map(function (f) { return p[f.k] ? '<div class="pf sep"><h3>' + f.h + '</h3><p style="white-space:pre-wrap;margin:0">' + esc(p[f.k]) + '</p></div>' : ''; }).join('') +
+          '</details>';
+      }).join('') : '<div class="card muted">まだ記入している人がいません</div>';
+    }
+    $('cq').oninput = draw; draw();
+  }).catch(function (e) { app.innerHTML = '<div class="card">' + esc(e.message || e) + '</div>'; });
+}
+
+// ---------- 起動 ----------
+if (MODE === 'staff') {
+  call('apiMe', TOKEN).then(function (me) {
+    S.me = me; S.date = me.today;
+    $('who').textContent = me.name + ' 先生' + (me.isAdmin ? '（管理者）' : '');
+    setTabs(); route();
+  }).catch(function (e) { $('app').innerHTML = '<div class="card">' + esc(e.message || e) + '</div>'; });
+} else if (MODE === 'student') {
+  studentTabs(); renderStudentSelf();
+} else {
+  $('app').innerHTML = '<div class="card">専用リンクから開いてください。</div>';
+}
+
+// ---------- ホーム画面に追加の案内 ----------
+(function () {
+  var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (standalone || MODE === 'none') return;
+  try { if (localStorage.getItem('installHintClosed')) return; } catch (e) {}
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var div = document.createElement('div');
+  div.className = 'install';
+  div.innerHTML = '<button class="x" aria-label="閉じる">×</button>📱 <b>ホーム画面に追加すると、アプリとして使えます。</b><br>' +
+    (ios ? 'Safariの下の［共有］ボタン →［ホーム画面に追加］' : 'ブラウザのメニュー（︙）→［ホーム画面に追加］または［アプリをインストール］');
+  var main = $('app'); main.parentNode.insertBefore(div, main);
+  div.style.margin = '12px 16px 0';
+  div.querySelector('.x').onclick = function () { div.remove(); try { localStorage.setItem('installHintClosed', '1'); } catch (e) {} };
+})();
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
+</script>
+</body>
+</html>
