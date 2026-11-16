@@ -376,6 +376,7 @@ function openStudent(studentId, ctx) {
     h += '<div class="card prof">' + PROFILE.map(function (f, i) {
       return '<div class="pf' + (i ? ' sep' : '') + '"><h3>' + f.h + '</h3>' + (pf[f.k] ? '<p>' + esc(pf[f.k]) + '</p>' : '<p class="empty">未記入</p>') + '</div>';
     }).join('') + '</div>';
+    if (st.canMental) h += '<div id="mentalwrap"></div>';
     h += '<div id="pastwrap"></div>';
     h += '<div class="card"><h3>✏️ レッスンノート（' + mdLabel(ctx.date) + '）</h3>';
     h += '<select id="lsel" class="sel">' + opts.map(function (l) {
@@ -388,6 +389,7 @@ function openStudent(studentId, ctx) {
     h += '<div class="savebar"><button class="mic" id="mic" aria-label="音声入力">🎤</button>' +
       '<button class="btn" id="save" style="flex:1">保存する</button></div><div class="status" id="st"></div></div>';
     app.innerHTML = h;
+    if (st.canMental) staffMentalCard($('mentalwrap'), studentId, st.mentalCount || 0);
     var ta = $('note'), stEl = $('st'), sel = $('lsel');
     var noteId = null, dirty = false;
     function draftKey() { return 'draft:' + studentId + ':' + ctx.date + ':' + cur.start; }
@@ -839,6 +841,57 @@ function mentalMonth() {
       call('apiMentalMonthSave', TOKEN, m.ym, R).then(function () { b.disabled = false; b.textContent = '振り返りを保存する'; toast('✅ 保存しました'); }).catch(function (e) { b.disabled = false; b.textContent = '振り返りを保存する'; err(e); });
     };
   }).catch(function (e) { body.innerHTML = ''; err(e); });
+}
+
+// ---------- メンタル記録（許可されたスタッフのみ閲覧） ----------
+function mentalEntryDetail(c) {
+  var rows = [];
+  var add = function (k, v) { if (v === undefined || v === null || v === '' || (v.length === 0)) return; rows.push('<div><span class="muted">' + k + '：</span>' + esc(Array.isArray(v) ? v.join('、') : String(v)) + '</div>'); };
+  var nums = [['緊張', c.tension], ['身体', c.bodyFreedom], ['声', c.voiceFreedom], ['自信', c.confidence], ['満足', c.satisfaction]]
+    .filter(function (x) { return x[1] !== undefined && x[1] !== null && x[1] !== ''; });
+  add('プレッシャー', (c.pressures || []).map(function (p) { return p === 'その他' && c.pressureOther ? c.pressureOther : p; }));
+  add('感覚', c.feeling === 'その他' && c.feelingOther ? c.feelingOther : c.feeling);
+  add('実践前', (c.prep || []).map(function (p) { return p === 'ルーティン' && c.routine ? 'ルーティン（' + c.routine + '）' : p; }));
+  var aw = [['集中', c.focus], ['声を気にした', c.voiceWorry], ['評価を気にした', c.evalWorry]].filter(function (x) { return x[1]; });
+  if (aw.length) add('やってみて', aw.map(function (x) { return x[0] + ' ' + x[1]; }).join('／'));
+  add('崩れた瞬間', c.breakdown);
+  add('何が起こった', c.whatHappened);
+  add('使ったもの', (c.recoveryTools || []).map(function (t) { return t === 'Reset Word' && c.resetWord ? 'Reset Word「' + c.resetWord + '」' : t; }));
+  if (c.recoveredLevel) add('戻れた度合い', c.recoveredLevel + ' / 10' + (c.backTime ? '（' + c.backTime + '）' : ''));
+  add('気づき', [c.notes, c.insight].filter(Boolean).join('\n'));
+  return '<div class="past"><div class="h">' + mdLabel(c.date) + '・' + esc(c.kind === 'その他' && c.kindOther ? c.kindOther : (c.kind || '')) + '</div>' +
+    (nums.length ? '<div style="margin:2px 0 4px">' + nums.map(function (x) { return '<span class="badge gray">' + x[0] + ' ' + x[1] + '</span>'; }).join('') + '</div>' : '') +
+    '<div class="t" style="white-space:pre-wrap">' + rows.join('') + '</div></div>';
+}
+function staffMentalCard(wrap, studentId, count) {
+  wrap.innerHTML = '<div class="card"><div class="row2" style="align-items:center"><h3 style="margin:0">🧠 メンタル記録（' + count + '件）</h3>' +
+    '<button class="btn small ghost" id="mopen" style="flex:none">' + (count ? '見る' : '—') + '</button></div>' +
+    '<div class="muted" style="font-size:12px;margin-top:4px">🔒 滉一さん・村木先生だけが見られます</div><div id="mview"></div></div>';
+  if (!count) { $('mopen').disabled = true; return; }
+  var open = false;
+  $('mopen').onclick = function () {
+    open = !open; $('mopen').textContent = open ? '閉じる' : '見る';
+    if (open) loadM(null); else $('mview').innerHTML = '';
+  };
+  function loadM(ym) {
+    var v = $('mview'); v.innerHTML = '<div class="loading">読み込み中…</div>';
+    call('apiMentalForStaff', TOKEN, studentId, ym).then(function (d) {
+      var m = d.month, R = m.reflection || {}, p = m.ym.split('-');
+      var fmt = function (x) { return x === null || x === undefined ? '—' : x; };
+      var h = '<div style="margin-top:12px">' + (trendSvg(d.list) || '') + '</div>';
+      h += '<div class="daynav" style="margin-top:12px"><button class="iconbtn" id="smprev">◀</button><div class="d">' + (+p[0]) + '年' + (+p[1]) + '月<small>記録 ' + m.count + '回（本番・実践 ' + m.stageCount + '回）</small></div><button class="iconbtn" id="smnext">▶</button></div>';
+      h += '<div class="stats"><div><b>' + fmt(m.practiceTension) + '</b><span>練習時の平均緊張度</span></div><div><b>' + fmt(m.stageTension) + '</b><span>本番・模擬の平均緊張度</span></div>' +
+        '<div><b>' + (m.gap === null ? '—' : (m.gap > 0 ? '+' : '') + m.gap) + '</b><span>本番と練習の差</span></div><div><b>' + fmt(R.performance) + '</b><span>実力発揮度（本人）</span></div></div>';
+      if (m.tools.length) h += '<div class="muted" style="margin-top:8px">Recovery Tool：' + m.tools.map(function (t) { return esc(t.name) + '（' + t.count + '回・' + fmt(t.avgBack) + '）'; }).join('、') + '</div>';
+      var refl = MONTH_Q.concat(NEXT_Q).filter(function (x) { return R[x[0]]; });
+      if (refl.length) h += '<div class="past" style="margin-top:10px"><div class="h">本人の月の振り返り</div><div class="t">' + refl.map(function (x) { return '<div><span class="muted">' + x[1] + '</span><br>' + esc(R[x[0]]) + '</div>'; }).join('<div style="height:6px"></div>') + '</div></div>';
+      var inMonth = d.list.filter(function (c) { return c.date.slice(0, 7) === m.ym; });
+      h += '<div class="pastlist" style="margin-top:10px">' + (inMonth.length ? inMonth.map(mentalEntryDetail).join('') : '<div class="muted">この月の記録はありません</div>') + '</div>';
+      v.innerHTML = h;
+      $('smprev').onclick = function () { loadM(ymAdd(m.ym, -1)); };
+      $('smnext').onclick = function () { loadM(ymAdd(m.ym, 1)); };
+    }).catch(function (e) { v.innerHTML = ''; err(e); });
+  }
 }
 
 // ---------- 起動 ----------
