@@ -866,7 +866,7 @@ function mentalEntryDetail(c) {
 function staffMentalCard(wrap, studentId, count) {
   wrap.innerHTML = '<div class="card"><div class="row2" style="align-items:center"><h3 style="margin:0">🧠 メンタル記録（' + count + '件）</h3>' +
     '<button class="btn small ghost" id="mopen" style="flex:none">' + (count ? '見る' : '—') + '</button></div>' +
-    '<div class="muted" style="font-size:12px;margin-top:4px">🔒 滉一さん・村木先生だけが見られます</div><div id="mview"></div></div>';
+    '<div class="muted" style="font-size:12px;margin-top:4px">🔒 先生・スタッフだけが見られます（メンバー同士は見られません）</div><div id="mview"></div></div>';
   if (!count) { $('mopen').disabled = true; return; }
   var open = false;
   $('mopen').onclick = function () {
