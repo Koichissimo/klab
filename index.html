@@ -5,31 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Kラボ</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon-192.png">
+<link rel="icon" href="favicon-64.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#7a1f3d">
+<meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Kラボ">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
   :root {
-    --wine: #7a1f3d; --wine-d: #5c162d; --wine-l: #f5e9ee;
-    --gold: #b8924a; --ink: #2a2326; --sub: #7d7177; --line: #e8e0e3;
-    --bg: #faf7f4; --card: #ffffff; --ok: #2e7d4f; --ok-l: #e7f4ec; --warn: #b3412f; --warn-l: #fbebe8;
+    --wine: #241c15; --wine-d: #000000; --wine-l: #f6eee2;
+    --gold: #b9823b; --ink: #2a2326; --sub: #7d7177; --line: #e8e0e3;
+    --bg: #fbf9f6; --card: #ffffff; --ok: #2e7d4f; --ok-l: #e7f4ec; --warn: #b3412f; --warn-l: #fbebe8;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; background: var(--bg); color: var(--ink);
     font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif;
     font-size: 16px; line-height: 1.6; }
-  header { background: var(--wine); color: #fff; padding: calc(14px + env(safe-area-inset-top)) 18px 12px; position: sticky; top: 0; z-index: 10; }
-  header .brand { display: flex; align-items: baseline; gap: 10px; }
-  header h1 { font-size: 20px; margin: 0; letter-spacing: .04em; }
-  header small { opacity: .75; font-size: 11px; letter-spacing: .08em; }
-  header .who { font-size: 13px; opacity: .9; margin-top: 2px; }
-  nav.tabs { display: flex; background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: calc(64px + env(safe-area-inset-top)); z-index: 9; }
+  header { background: #fff; color: var(--ink); padding: calc(12px + env(safe-area-inset-top)) 18px 10px; position: relative; }
+  header::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, #1b140f 0%, #8a5a26 45%, #e2ae5c 100%); }
+  header .brand { display: flex; align-items: center; }
+  header .logo { height: 46px; width: auto; display: block; }
+  header .who { font-size: 13px; color: var(--sub); margin-top: 6px; letter-spacing: .02em; }
+  nav.tabs { display: flex; background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 9; }
   nav.tabs button { flex: 1; border: 0; background: none; padding: 12px 4px; font-size: 15px; color: var(--sub); border-bottom: 3px solid transparent; font-family: inherit; }
-  nav.tabs button.on { color: var(--wine); border-bottom-color: var(--wine); font-weight: 700; }
+  nav.tabs button.on { color: var(--ink); border-bottom-color: var(--gold); font-weight: 700; }
   main { padding: 16px; max-width: 680px; margin: 0 auto 80px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
   .muted { color: var(--sub); font-size: 13px; }
@@ -37,7 +37,7 @@
   .daynav .d { font-size: 18px; font-weight: 700; text-align: center; }
   .daynav .d small { display: block; font-weight: 400; font-size: 12px; color: var(--sub); }
   .iconbtn { border: 1px solid var(--line); background: #fff; width: 44px; height: 44px; border-radius: 22px; font-size: 18px; color: var(--wine); }
-  .lesson .time { font-size: 20px; font-weight: 700; color: var(--wine); }
+  .lesson .time { font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: .02em; }
   .lesson .title { font-weight: 700; margin-top: 2px; }
   .badge { display: inline-block; font-size: 12px; padding: 2px 10px; border-radius: 99px; background: var(--wine-l); color: var(--wine); margin-right: 6px; vertical-align: middle; }
   .badge.ok { background: var(--ok-l); color: var(--ok); }
@@ -57,7 +57,7 @@
   .btn[disabled] { opacity: .5; }
   .confirm-bar { margin-top: 12px; }
   h2 { font-size: 22px; margin: 4px 0 2px; }
-  h3 { font-size: 14px; color: var(--wine); margin: 0 0 6px; letter-spacing: .05em; }
+  h3 { font-size: 14px; color: #8a5a26; margin: 0 0 6px; letter-spacing: .05em; }
   .prof p { white-space: pre-wrap; margin: 0; }
   .empty { color: var(--sub); font-style: italic; }
   textarea, input[type=text], input[type=search] { width: 100%; border: 1.5px solid var(--line); border-radius: 12px; padding: 12px; font-size: 16px; font-family: inherit; background: #fff; color: var(--ink); }
@@ -99,7 +99,7 @@
 </head>
 <body>
 <header>
-  <div class="brand"><h1>Kラボ</h1><small>K MUSICAL SINGING LAB</small></div>
+  <div class="brand"><img class="logo" src="logo-header.png" alt="K MUSICAL SINGING LAB"></div>
   <div class="who" id="who"></div>
 </header>
 <nav class="tabs" id="tabs" style="display:none"></nav>
