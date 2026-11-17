@@ -184,76 +184,76 @@ function fallbackCopy(text) {
 function attachMic(btn, textarea, onChange) {
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   var isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  var rec = null, active = false, base = '', done = '', live = '', heard = false, watchdog = null;
+  // active = 聞き取り中（ボタンが■）、running = 音声認識が実際に動いている
+  var r = null, active = false, running = false, base = '', done = '', live = '', before = '', heard = false, watchdog = null, waitEnd = null;
   function show(on) {
     btn.classList.toggle('rec', on); btn.textContent = on ? '■' : '🎤';
     btn.setAttribute('aria-label', on ? '音声入力を停止' : '音声入力');
   }
-  function write() {
-    textarea.value = base + done + live;
-    if (onChange) onChange();
-  }
+  function write() { textarea.value = base + done + live; if (onChange) onChange(); }
   // 画面に出ている途中の文字も、確定した文字として残す
-  function commitLive() {
-    if (live) { done += live.replace(/[。．.、]?$/, '。'); live = ''; }
-  }
-  function finish(msg) {
+  function commitLive() { if (live) { done += live.replace(/[。．.、]?$/, '。'); live = ''; } }
+  function stopListening(msg) {
     if (!active) return;
     active = false; clearTimeout(watchdog); commitLive(); show(false); write();
-    var r = rec; rec = null;
-    if (r) { r.onend = r.onresult = r.onerror = null; try { r.stop(); } catch (e) {} try { r.abort(); } catch (e) {} }
+    if (running) { try { r.stop(); } catch (e) {} }
     if (msg) toast(msg, 5000);
   }
-  function startOne() {
-    var r = new SR();
+  function tryStart(left) {
+    if (!active || running) return;
+    before = done;
+    try { r.start(); running = true; }
+    catch (e) {
+      if (left > 0) setTimeout(function () { tryStart(left - 1); }, 300);
+      else stopListening('音声入力を開始できませんでした。少し待ってからもう一度押すか、キーボードのマイク（🎙）で話してください');
+    }
+  }
+  function setup() {
+    r = new SR();
     r.lang = 'ja-JP'; r.interimResults = true;
     r.continuous = !isIOS; // iPhoneは1文ずつ自動で再開する方が安定
     r.onresult = function (ev) {
+      if (!active) return; // 停止後に届いた結果は、もう画面に残してあるので使わない
       heard = true; clearTimeout(watchdog);
       var fin = '', interim = '';
       for (var i = 0; i < ev.results.length; i++) {
         var t = ev.results[i][0].transcript;
-        if (ev.results[i].isFinal) fin += t; else interim += t;
+        if (ev.results[i].isFinal) fin += t.replace(/[。．.]?$/, '。'); else interim += t;
       }
-      if (r.continuous) {
-        // continuous では結果が積み上がるので、確定分は毎回作り直す
-        var all = '';
-        for (var j = 0; j < ev.results.length; j++) {
-          if (ev.results[j].isFinal) all += ev.results[j][0].transcript.replace(/[。．.]?$/, '。');
-        }
-        done = r._before + all;
-      } else if (fin) { done += fin.replace(/[。．.]?$/, '。'); }
+      if (r.continuous) done = before + fin; // 結果が積み上がるので毎回作り直す
+      else if (fin) { done += fin; before = done; }
       live = interim;
       write();
     };
     r.onerror = function (ev) {
       if (ev.error === 'no-speech' || ev.error === 'aborted') return;
       if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed' || ev.error === 'audio-capture') {
-        finish('マイクを使えませんでした。設定でマイクを許可するか、キーボードのマイク（🎙）で話してください');
-      } else finish('音声入力が止まりました（' + ev.error + '）。キーボードのマイク（🎙）でも入力できます');
+        stopListening('マイクを使えませんでした。設定でマイクを許可するか、キーボードのマイク（🎙）で話してください');
+      } else stopListening('音声入力が止まりました（' + ev.error + '）。もう一度🎤を押すと続きから入力できます');
     };
     r.onend = function () {
+      running = false; clearTimeout(waitEnd);
       if (!active) return;
       commitLive(); write();
-      // ボタンで止めるまで自動で聞き続ける
-      try { r._before = done; r.start(); } catch (e) { finish(); }
+      tryStart(3); // ■を押すまで聞き続ける／再開待ちならここで開始
     };
-    r._before = done;
-    rec = r;
-    r.start();
   }
   btn.addEventListener('click', function () {
-    if (active) { finish(); return; }
+    if (active) { stopListening(); return; }
     if (!SR) { toast('この画面では🎤ボタンが使えません。キーボードのマイク（🎙）で話してください', 5000); textarea.focus(); return; }
+    if (!r) setup();
+    // 今ある文字の続きに書き足す
     base = textarea.value; if (base && !/\n$/.test(base)) base += '\n';
     done = ''; live = ''; heard = false;
-    try { startOne(); } catch (e) { toast('音声入力を開始できませんでした。キーボードのマイク（🎙）で話してください', 5000); return; }
     active = true; show(true);
     toast('話してください（■を押すと停止）');
-    // 10秒たっても文字にならない端末では止めて案内する
+    if (running) {
+      // 前回の停止がまだ終わっていなければ、終わり次第始める（念のため1.5秒で切り替え）
+      waitEnd = setTimeout(function () { if (running) { try { r.abort(); } catch (e) {} running = false; tryStart(3); } }, 1500);
+    } else tryStart(3);
     watchdog = setTimeout(function () {
-      if (active && !heard) finish('この端末では🎤ボタンで文字にできないようです。キーボードのマイク（🎙）で話してください');
-    }, 10000);
+      if (active && !heard) stopListening('この端末では🎤ボタンで文字にできないようです。キーボードのマイク（🎙）で話してください');
+    }, 12000);
   });
 }
 
