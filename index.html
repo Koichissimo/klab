@@ -184,18 +184,22 @@ function fallbackCopy(text) {
 function attachMic(btn, textarea, onChange) {
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   var isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  var rec = null, active = false, base = '', done = '', heard = false, watchdog = null;
+  var rec = null, active = false, base = '', done = '', live = '', heard = false, watchdog = null;
   function show(on) {
     btn.classList.toggle('rec', on); btn.textContent = on ? '■' : '🎤';
     btn.setAttribute('aria-label', on ? '音声入力を停止' : '音声入力');
   }
-  function write(interim) {
-    textarea.value = base + done + (interim || '');
+  function write() {
+    textarea.value = base + done + live;
     if (onChange) onChange();
+  }
+  // 画面に出ている途中の文字も、確定した文字として残す
+  function commitLive() {
+    if (live) { done += live.replace(/[。．.、]?$/, '。'); live = ''; }
   }
   function finish(msg) {
     if (!active) return;
-    active = false; clearTimeout(watchdog); show(false); write('');
+    active = false; clearTimeout(watchdog); commitLive(); show(false); write();
     var r = rec; rec = null;
     if (r) { r.onend = r.onresult = r.onerror = null; try { r.stop(); } catch (e) {} try { r.abort(); } catch (e) {} }
     if (msg) toast(msg, 5000);
@@ -211,16 +215,16 @@ function attachMic(btn, textarea, onChange) {
         var t = ev.results[i][0].transcript;
         if (ev.results[i].isFinal) fin += t; else interim += t;
       }
-      if (fin) { done += fin.replace(/[。．.]?$/, '。'); fin = ''; }
       if (r.continuous) {
         // continuous では結果が積み上がるので、確定分は毎回作り直す
-        var all = '', live = '';
+        var all = '';
         for (var j = 0; j < ev.results.length; j++) {
-          if (ev.results[j].isFinal) all += ev.results[j][0].transcript.replace(/[。．.]?$/, '。'); else live += ev.results[j][0].transcript;
+          if (ev.results[j].isFinal) all += ev.results[j][0].transcript.replace(/[。．.]?$/, '。');
         }
-        done = r._before + all; interim = live;
-      }
-      write(interim);
+        done = r._before + all;
+      } else if (fin) { done += fin.replace(/[。．.]?$/, '。'); }
+      live = interim;
+      write();
     };
     r.onerror = function (ev) {
       if (ev.error === 'no-speech' || ev.error === 'aborted') return;
@@ -230,7 +234,7 @@ function attachMic(btn, textarea, onChange) {
     };
     r.onend = function () {
       if (!active) return;
-      write('');
+      commitLive(); write();
       // ボタンで止めるまで自動で聞き続ける
       try { r._before = done; r.start(); } catch (e) { finish(); }
     };
@@ -242,7 +246,7 @@ function attachMic(btn, textarea, onChange) {
     if (active) { finish(); return; }
     if (!SR) { toast('この画面では🎤ボタンが使えません。キーボードのマイク（🎙）で話してください', 5000); textarea.focus(); return; }
     base = textarea.value; if (base && !/\n$/.test(base)) base += '\n';
-    done = ''; heard = false;
+    done = ''; live = ''; heard = false;
     try { startOne(); } catch (e) { toast('音声入力を開始できませんでした。キーボードのマイク（🎙）で話してください', 5000); return; }
     active = true; show(true);
     toast('話してください（■を押すと停止）');
