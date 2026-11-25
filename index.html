@@ -441,7 +441,9 @@ function openStudent(studentId, ctx) {
     }).join('') + '</div>';
     if (st.canMental) h += '<div id="mentalwrap"></div>';
     h += '<div id="pastwrap"></div>';
-    h += '<div class="card"><h3>✏️ レッスンノート（' + mdLabel(ctx.date) + '）</h3>';
+    h += '<div class="card"><div class="row2" style="align-items:center;margin-bottom:8px"><h3 style="margin:0">✏️ レッスンノート</h3>' +
+      '<input type="date" id="ndate" value="' + esc(ctx.date) + '" max="' + esc(S.me.today) + '" style="flex:none;border:1.5px solid var(--line);border-radius:10px;padding:6px 8px;font-family:inherit;font-size:15px"></div>' +
+      (ctx.date < S.me.today ? '<div class="muted" style="font-size:12px;margin:-4px 0 8px">' + mdLabel(ctx.date) + ' のレッスンのノートとして保存されます</div>' : '<div class="muted" style="font-size:12px;margin:-4px 0 8px">書き忘れた日のノートは、日付を変えて書けます</div>');
     // その日のレッスンが2つ以上ある時だけ、どのレッスンのノートかを選ぶ
     if (opts.length > 1) h += '<div class="muted" style="font-size:12px;margin:-2px 0 4px">どのレッスンのノートか選んでください</div><select id="lsel" class="sel">' + opts.map(function (l) {
       return '<option value="' + esc(l.start) + '">' + esc(lessonLabel(l)) + (S.me.isAdmin && !l.isMine ? '（' + esc(l.teacher) + '）' : '') + '</option>';
@@ -491,6 +493,12 @@ function openStudent(studentId, ctx) {
     }
     if (sel) sel.value = cur.start;
     load();
+    $('ndate').onchange = function () {
+      var nd = this.value;
+      if (!nd || nd === ctx.date) return;
+      if (dirty && !window.confirm('保存していない変更があります。日付を変えますか？（下書きはこの端末に残ります）')) { this.value = ctx.date; return; }
+      openStudent(studentId, { date: nd, start: '' });
+    };
     if (sel) sel.onchange = function () {
       if (dirty && !window.confirm('保存していない変更があります。切り替えますか？（下書きはこの端末に残ります）')) { sel.value = cur.start; return; }
       cur.start = sel.value; load();
