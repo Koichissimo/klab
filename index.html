@@ -120,6 +120,17 @@
   .legend i.ring { background: #fff; border: 2px solid var(--sub); width: 8px; height: 8px; }
   .mlog { cursor: pointer; }
   .memo { cursor: pointer; }
+  .prow { border-bottom: 1px solid var(--line); cursor: pointer; }
+  .prow:last-child { border-bottom: 0; }
+  .prow .ph { display: flex; align-items: center; gap: 8px; padding: 10px 2px; font-size: 14px; }
+  .prow .pd { font-weight: 700; flex: none; min-width: 38px; }
+  .prow .pt { flex: none; color: var(--sub); font-size: 12px; max-width: 5.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .prow .p1 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .prow .pc { flex: none; color: var(--sub); transition: transform .15s; }
+  .prow .pfull { display: none; white-space: pre-wrap; padding: 0 2px 12px; font-size: 14px; line-height: 1.7; }
+  .prow.open .pfull { display: block; }
+  .prow.open .p1 { visibility: hidden; }
+  .prow.open .pc { transform: rotate(90deg); }
   .monthhd { font-size: 13px; font-weight: 700; color: var(--sub); margin: 14px 0 6px; }
   .monthhd:first-child { margin-top: 0; }
   .hintcard { background: #fbf5ea; border-color: #ecd9b8; }
@@ -459,9 +470,19 @@ function openStudent(studentId, ctx) {
       stEl.textContent = dirty ? '前回の下書きを復元しました（未保存）' : (n ? '保存済み（' + n.updated + '）' : '');
       $('count').textContent = ta.value.length + '文字';
       var past = st.notes.filter(function (x) { return x.id !== noteId; });
-      $('pastwrap').innerHTML = '<div class="card"><h3>📖 これまでのノート（' + past.length + '件・全講師）</h3>' + (past.length ? '<div class="pastlist">' + past.map(function (x) {
-        return '<div class="past"><div class="h">' + mdLabel(x.date) + (x.start ? ' ' + esc(x.start) : '') + '・' + esc(x.teacher) + '</div><div class="t">' + esc(x.text) + '</div></div>';
-      }).join('') + '</div>' : '<div class="muted">まだノートはありません（初回レッスン）</div>') + '</div>';
+      $('pastwrap').innerHTML = '<div class="card"><div class="row2" style="align-items:center"><h3 style="margin:0">📖 これまでのノート（' + past.length + '件・全講師）</h3>' +
+        (past.length ? '<button class="btn small ghost" id="pastall" style="flex:none">全部開く</button>' : '') + '</div>' +
+        (past.length ? '<div class="muted" style="font-size:12px;margin:4px 0 8px">タップすると全文が開きます</div><div class="pastlist">' + past.map(function (x) {
+          var first = String(x.text || '').split('\n').map(function (l) { return l.trim(); }).filter(function (l) { return l && !/^【[^】]*】$/.test(l); })[0] || '';
+          return '<div class="prow"><div class="ph"><span class="pd">' + mdLabel(x.date) + '</span><span class="pt">' + esc(x.teacher) + '</span><span class="p1">' + esc(first) + '</span><span class="pc">›</span></div>' +
+            '<div class="pfull">' + (x.start ? '<div class="muted" style="font-size:12px">' + esc(x.start) + '〜</div>' : '') + esc(x.text) + '</div></div>';
+        }).join('') + '</div>' : '<div class="muted" style="margin-top:6px">まだノートはありません（初回レッスン）</div>') + '</div>';
+      Array.prototype.forEach.call($('pastwrap').querySelectorAll('.prow'), function (r) { r.onclick = function () { r.classList.toggle('open'); }; });
+      if ($('pastall')) $('pastall').onclick = function () {
+        var rows = $('pastwrap').querySelectorAll('.prow'), open = this.textContent === '全部開く';
+        Array.prototype.forEach.call(rows, function (r) { r.classList.toggle('open', open); });
+        this.textContent = open ? '全部閉じる' : '全部開く';
+      };
     }
     if (opts.length === 1) cur.start = opts[0].start;
     else if (opts.length === 0) cur.start = '';
