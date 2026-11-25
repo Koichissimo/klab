@@ -431,9 +431,11 @@ function openStudent(studentId, ctx) {
     if (st.canMental) h += '<div id="mentalwrap"></div>';
     h += '<div id="pastwrap"></div>';
     h += '<div class="card"><h3>✏️ レッスンノート（' + mdLabel(ctx.date) + '）</h3>';
-    h += '<select id="lsel" class="sel">' + opts.map(function (l) {
+    // その日のレッスンが2つ以上ある時だけ、どのレッスンのノートかを選ぶ
+    if (opts.length > 1) h += '<div class="muted" style="font-size:12px;margin:-2px 0 4px">どのレッスンのノートか選んでください</div><select id="lsel" class="sel">' + opts.map(function (l) {
       return '<option value="' + esc(l.start) + '">' + esc(lessonLabel(l)) + (S.me.isAdmin && !l.isMine ? '（' + esc(l.teacher) + '）' : '') + '</option>';
-    }).join('') + '<option value="">レッスン外のメモ</option></select>';
+    }).join('') + '</select>';
+    else if (opts.length === 1) h += '<div class="muted" style="margin-bottom:8px">' + esc(lessonLabel(opts[0])) + '</div>';
     h += '<div class="editorbar">' +
       ['今日やったこと', '良かった点', '課題', '次回までの宿題'].map(function (c) { return '<button class="chip" data-chip="' + c + '">＋' + c + '</button>'; }).join('') + '</div>';
     h += '<textarea class="note" id="note" placeholder="手で打つか、🎤を押して話してください"></textarea>';
@@ -461,10 +463,14 @@ function openStudent(studentId, ctx) {
         return '<div class="past"><div class="h">' + mdLabel(x.date) + (x.start ? ' ' + esc(x.start) : '') + '・' + esc(x.teacher) + '</div><div class="t">' + esc(x.text) + '</div></div>';
       }).join('') + '</div>' : '<div class="muted">まだノートはありません（初回レッスン）</div>') + '</div>';
     }
-    sel.value = cur.start;
-    if (sel.selectedIndex < 0 || sel.value !== cur.start) { sel.value = ''; cur.start = ''; }
+    if (opts.length === 1) cur.start = opts[0].start;
+    else if (opts.length === 0) cur.start = '';
+    else if (!opts.some(function (l) { return l.start === cur.start; })) {
+      cur.start = guessLesson(ctx.date) || opts[0].start;
+    }
+    if (sel) sel.value = cur.start;
     load();
-    sel.onchange = function () {
+    if (sel) sel.onchange = function () {
       if (dirty && !window.confirm('保存していない変更があります。切り替えますか？（下書きはこの端末に残ります）')) { sel.value = cur.start; return; }
       cur.start = sel.value; load();
     };
